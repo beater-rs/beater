@@ -35,13 +35,11 @@ impl From<MercuryError> for Error {
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 impl Beater {
-    pub async fn new(username: impl Into<String>, password: impl Into<String>) -> Result<Self> {
-        #[cfg(test)]
-        {
-            // start a logger
-            use simplelog::{Config, SimpleLogger};
-            SimpleLogger::init(log::LevelFilter::Debug, Config::default()).ok();
-        }
+    pub async fn new(
+        username: impl Into<String>,
+        password: impl Into<String>,
+        config: config::Config,
+    ) -> Result<Self> {
         let session = Session::connect(
             SessionConfig {
                 user_agent: concat!(
@@ -62,7 +60,7 @@ impl Beater {
 
         let token = get_token(
             &session,
-            "dwasd",
+            "b8682ddfdcd04c31a14ebd926a7e7f07",
             "user-read-email,playlist-read-private,user-library-read",
         )
         .await?;
@@ -70,27 +68,29 @@ impl Beater {
         Ok(Self {
             session,
             token,
-            config: config::Config {},
+            config,
         })
-    }
-    pub async fn is_premium_account(&self) -> bool {
-        // get_token(&self.session).await.unwrap();
-        true
-    }
-
-    pub async fn is_standard_account(&self) -> bool {
-        !self.is_premium_account().await
     }
 }
 
 #[cfg(test)]
 mod tests {
-    const CREDENTIALS: (&str, &str) = ("31woy7dllvxal6lcroelpl5s2rhu", "idrcwhattoputasapassw0rd");
+    use crate::*;
+
+    async fn create() -> Beater {
+        Beater::new(
+            "31woy7dllvxal6lcroelpl5s2rhu",
+            "idrcwhattoputasapassw0rd",
+            config::Config {
+                download_quality: config::DownloadQuality::High,
+            },
+        )
+        .await
+        .unwrap()
+    }
 
     #[tokio::test]
     async fn new_beater() {
-        crate::Beater::new(CREDENTIALS.0, CREDENTIALS.1)
-            .await
-            .unwrap();
+        create().await;
     }
 }

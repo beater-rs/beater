@@ -10,7 +10,7 @@ reqwest = { version = "0.11", default-features = false, features = [
     "json",
     "rustls-tls",
 ] }
-librespot = "0.3"
+librespot = { git = "https://github.com/beater-rs/librespot" }
 thiserror = "1.0"
 
 [dev-dependencies]
