@@ -1,12 +1,12 @@
 use librespot::{
-    audio::AudioFile,
+    audio::{AudioDecrypt, AudioFile},
     core::{
         audio_key::AudioKeyError,
         channel::ChannelError,
         config::SessionConfig,
         mercury::MercuryError,
         session::{Session, SessionError},
-        spotify_id::SpotifyId,
+        spotify_id::{FileId, SpotifyId},
     },
     discovery::Credentials,
     metadata::AudioItem,
@@ -142,12 +142,13 @@ impl Beater {
     /// This function will return an error if opening the [`AudioFile`] fails, or if the file format does not exist for the song.
     pub async fn get_audio_file(
         &self,
-        audio_item: AudioItem,
+        audio_item: &AudioItem,
         music_format: FileFormat,
-    ) -> Result<AudioFile> {
+    ) -> Result<(AudioFile, FileId)> {
         if let Some(file_id) = audio_item.files.get(&music_format) {
             AudioFile::open(&self.session, *file_id, 40 * 1024, true)
                 .await
+                .map(|audio_file| (audio_file, *file_id))
                 .map_err(Error::from)
 
             // self.decrypt_audio_file(audio_item.id, file_id, audio_file)
@@ -155,26 +156,24 @@ impl Beater {
         } else {
             Err(Error::FileFormatNotFound(
                 music_format,
-                audio_item.files.into_keys().collect(),
+                audio_item.files.keys().cloned().collect(),
             ))
         }
     }
 
-    /*
-    pub(crate) async fn decrypt_audio_file<T: Read>(
+    pub(crate) async fn decrypt_audio_file(
         &self,
         spotify_id: SpotifyId,
         file_id: FileId,
-        audio_file: T,
-    ) -> Result<AudioDecrypt<T>> {
+        audio_file: AudioFile,
+    ) -> Result<AudioDecrypt<AudioFile>> {
         let key = self
             .session
             .audio_key()
             .request(spotify_id, file_id)
             .await?;
-         Ok(AudioDecrypt::new(key, audio_file))
+        Ok(AudioDecrypt::new(key, audio_file))
     }
-    */
 }
 
 #[cfg(test)]
@@ -200,17 +199,22 @@ mod tests {
     async fn get_audio_file() {
         let beater = create().await;
 
-        let song = beater
-            .get_song(SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap())
+        let spotify_id = SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap();
+
+        let song = beater.get_song(spotify_id).await.unwrap();
+        log::debug!("{:#?}", song);
+        let (audio_file, file_id) = beater
+            .get_audio_file(&song, FileFormat::OGG_VORBIS_320)
             .await
             .unwrap();
-        let mut file = beater
-            .get_audio_file(song, FileFormat::OGG_VORBIS_320)
+
+        let mut decrypted_audio_file = beater
+            .decrypt_audio_file(song.id, file_id, audio_file)
             .await
             .unwrap();
 
         let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
+        decrypted_audio_file.read_to_end(&mut buf).unwrap();
 
         std::fs::write("song.ogg", buf).unwrap();
     }
