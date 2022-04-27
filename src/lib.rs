@@ -57,23 +57,6 @@ impl From<AudioKeyError> for Error {
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 impl Beater {
-    /// Creates a new [`Beater`] instance. This will connect to your spotify account.
-    ///
-    /// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
-    /// <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
-    /// </p>
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use beater::Beater;
-    /// let beater = Beater::new(username, password).await?;
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if the session fails to connect (e.g. your credentials are invalid,
-    /// or [`librespot`] cannot access the Spotify API).
     pub async fn new(username: impl Into<String>, password: impl Into<String>) -> Result<Self> {
         Ok(Self {
             session: Session::connect(
@@ -95,51 +78,12 @@ impl Beater {
         })
     }
 
-    /// Gets the
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use beater::Beater;
-    ///
-    /// let beater = Beater::new(username, password).await?;
-    /// let song = beater.get_song(song_id).await?;
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if creating an [`AudioItem`] fails.
     pub async fn get_song(&self, id: SpotifyId) -> Result<AudioItem> {
         AudioItem::get_audio_item(&self.session, id)
             .await
             .map_err(Error::from)
     }
 
-    /// Gets a readable audio file for the given [`AudioItem`], with the given [`FileFormat`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use beater::{Beater, FileFormat};
-    /// use std::fs::File;
-    ///
-    /// // create a beater and get a song
-    /// let beater: Beater = Beater::new(username, password).await?;
-    /// let audio_item: AudioItem = beater.get_song(song_id).await?;
-    /// let audio_file: AudioFile = beater.get_audio_file(audio_item, FileFormat::OGG_VORBIS_320).await?;
-    ///
-    /// // put the song into the buffer
-    /// let audio_file = Vec::new();
-    /// audio_file.read_to_end(&mut audio_file);
-    ///
-    /// // write the song to a file
-    /// let mut file = File::create("song.ogg")?;
-    /// file.write_all(&audio_file)?;
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if opening the [`AudioFile`] fails, or if the file format does not exist for the song.
     pub async fn get_audio_file(
         &self,
         audio_item: &AudioItem,
@@ -174,11 +118,31 @@ impl Beater {
             .await?;
         Ok(AudioDecrypt::new(key, audio_file))
     }
+
+    pub fn session(&self) -> &Session {
+        &self.session
+    }
+
+    pub fn into_session(self) -> Session {
+        self.session
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use std::{
+        cell::RefCell,
+        io::Read,
+        sync::{Arc, Mutex},
+    };
+
+    use librespot::playback::{
+        audio_backend::{Sink, SinkBuilder, SinkResult},
+        config::PlayerConfig,
+        convert::Converter,
+        decoder::AudioPacket,
+        player::Player,
+    };
 
     use crate::*;
 
@@ -201,21 +165,43 @@ mod tests {
 
         let spotify_id = SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap();
 
-        let song = beater.get_song(spotify_id).await.unwrap();
-        log::debug!("{:#?}", song);
-        let (audio_file, file_id) = beater
-            .get_audio_file(&song, FileFormat::OGG_VORBIS_320)
-            .await
-            .unwrap();
+        let _song = beater.get_song(spotify_id).await.unwrap();
 
-        let mut decrypted_audio_file = beater
-            .decrypt_audio_file(song.id, file_id, audio_file)
-            .await
-            .unwrap();
+        let audio_file = Vec::new();
 
-        let mut buf = Vec::new();
-        decrypted_audio_file.read_to_end(&mut buf).unwrap();
+        #[derive(Clone)]
+        struct Thing(Arc<Mutex<Vec<u8>>>);
 
-        std::fs::write("song.ogg", buf).unwrap();
+        impl Sink for Thing {
+            fn write(
+                &mut self,
+                packet: &AudioPacket,
+                _converter: &mut Converter,
+            ) -> SinkResult<()> {
+                for i in packet.oggdata().unwrap() {
+                    log::debug!("{:?}", i);
+                    self.0.lock().unwrap().push(*i);
+                }
+
+                Ok(())
+            }
+        }
+
+        let thing = Thing(Arc::new(Mutex::new(audio_file)));
+
+        let thing_ = thing.clone();
+        let (mut player, _) = Player::new(
+            PlayerConfig::default(),
+            beater.into_session(),
+            None,
+            move || Box::new(thing_),
+        );
+
+        player.load(spotify_id, true, 0);
+        player.play();
+
+        player.await_end_of_track().await;
+
+        std::fs::write("test.ogg", &**thing.0.lock().unwrap()).unwrap();
     }
 }
