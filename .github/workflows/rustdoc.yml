@@ -1,4 +1,4 @@
-name: Document Using rustdoc
+name: rustdoc
 on: [push]
 
 jobs:
@@ -16,13 +16,10 @@ jobs:
                   toolchain: stable
                   profile: minimal
                   override: true
-                  components: rust-src
-
-            - name: Setup Advanced Linux Sound Architecture
-              run: sudo apt install libasound2-dev -y
+                  components: rustfmt, rust-src
 
             - name: Build Documentation
-              run: cargo doc
+              run: cargo doc --all
 
             - name: Deploy Docs
               uses: peaceiris/actions-gh-pages@v3
