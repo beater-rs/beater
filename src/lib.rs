@@ -1,12 +1,17 @@
+//! <p class="compile_fail">
+//!  **Warning**: There is a <i>slight</i> chance that you will get banned by using this library.
+//!               Use at your own risk.
+//! </p>
+
 use librespot::{
-    audio::AudioFile,
+    audio::{AudioDecrypt, AudioFile},
     core::{
         audio_key::AudioKeyError,
         channel::ChannelError,
         config::SessionConfig,
         mercury::MercuryError,
         session::{Session, SessionError},
-        spotify_id::SpotifyId,
+        spotify_id::{FileId, SpotifyId},
     },
     discovery::Credentials,
     metadata::AudioItem,
@@ -34,7 +39,10 @@ pub enum Error {
         "A file with the {0:?} file format was not found, the available file formats are {1:?}"
     )]
     FileFormatNotFound(FileFormat, Vec<FileFormat>),
-    #[error("An unknown error given when requesting an `AudioKey`")]
+    #[error(
+        "An unknown error given when requesting an `AudioKey`. {}",
+        "This usually means that you are requesting a file quality that is too high for your account"
+    )]
     AudioKeyError,
 }
 
@@ -57,23 +65,24 @@ impl From<AudioKeyError> for Error {
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
 impl Beater {
-    /// Creates a new [`Beater`] instance. This will connect to your spotify account.
+    /// Creates a new [`Beater`] instance.
     ///
-    /// <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
-    /// <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
+    /// <p class="compile_fail">
+    ///  **Warning**: There is a <i>slight</i> chance that you will get banned by using this library.
+    ///               Use at your own risk.
     /// </p>
     ///
     /// # Examples
     ///
     /// ```
     /// use beater::Beater;
-    /// let beater = Beater::new(username, password).await?;
+    ///
+    /// let beater = Beater::new(username, password);
     /// ```
     ///
     /// # Errors
     ///
-    /// This function will return an error if the session fails to connect (e.g. your credentials are invalid,
-    /// or [`librespot`] cannot access the Spotify API).
+    /// This function will return an error if the [`Session`] fails to connect (e.g. your credentials are wrong).
     pub async fn new(username: impl Into<String>, password: impl Into<String>) -> Result<Self> {
         Ok(Self {
             session: Session::connect(
@@ -95,91 +104,67 @@ impl Beater {
         })
     }
 
-    /// Gets the
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use beater::Beater;
-    ///
-    /// let beater = Beater::new(username, password).await?;
-    /// let song = beater.get_song(song_id).await?;
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if creating an [`AudioItem`] fails.
-    pub async fn get_song(&self, id: SpotifyId) -> Result<AudioItem> {
+    pub async fn get_audio_item(&self, id: SpotifyId) -> Result<AudioItem> {
         AudioItem::get_audio_item(&self.session, id)
             .await
             .map_err(Error::from)
     }
 
-    /// Gets a readable audio file for the given [`AudioItem`], with the given [`FileFormat`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use beater::{Beater, FileFormat};
-    /// use std::fs::File;
-    ///
-    /// // create a beater and get a song
-    /// let beater: Beater = Beater::new(username, password).await?;
-    /// let audio_item: AudioItem = beater.get_song(song_id).await?;
-    /// let audio_file: AudioFile = beater.get_audio_file(audio_item, FileFormat::OGG_VORBIS_320).await?;
-    ///
-    /// // put the song into the buffer
-    /// let audio_file = Vec::new();
-    /// audio_file.read_to_end(&mut audio_file);
-    ///
-    /// // write the song to a file
-    /// let mut file = File::create("song.ogg")?;
-    /// file.write_all(&audio_file)?;
-    /// ```
-    ///
-    /// # Errors
-    ///
-    /// This function will return an error if opening the [`AudioFile`] fails, or if the file format does not exist for the song.
     pub async fn get_audio_file(
         &self,
-        audio_item: AudioItem,
+        audio_item: &AudioItem,
         music_format: FileFormat,
-    ) -> Result<AudioFile> {
-        if let Some(file_id) = audio_item.files.get(&music_format) {
-            AudioFile::open(&self.session, *file_id, 40 * 1024, true)
+    ) -> Result<(AudioDecrypt<AudioFile>, FileId)> {
+        if let Some(file_id) = audio_item.files.get(&music_format).copied() {
+            let encrypted = AudioFile::open(&self.session, file_id, 1024 * 1024, true)
                 .await
-                .map_err(Error::from)
+                .map_err(Error::from)?;
+            encrypted.get_stream_loader_controller().set_stream_mode();
 
-            // self.decrypt_audio_file(audio_item.id, file_id, audio_file)
-            //     .await
+            let decrypted = self
+                .decrypt_audio_file(audio_item.id, file_id, encrypted)
+                .await
+                .ok_or(Error::AudioKeyError)?;
+
+            Ok((decrypted, file_id))
         } else {
             Err(Error::FileFormatNotFound(
                 music_format,
-                audio_item.files.into_keys().collect(),
+                audio_item.files.keys().cloned().collect(),
             ))
         }
     }
 
-    /*
-    pub(crate) async fn decrypt_audio_file<T: Read>(
+    pub(crate) async fn decrypt_audio_file(
         &self,
         spotify_id: SpotifyId,
         file_id: FileId,
-        audio_file: T,
-    ) -> Result<AudioDecrypt<T>> {
+        audio_file: AudioFile,
+    ) -> Option<AudioDecrypt<AudioFile>> {
         let key = self
             .session
             .audio_key()
             .request(spotify_id, file_id)
-            .await?;
-         Ok(AudioDecrypt::new(key, audio_file))
+            .await
+            .ok()?;
+        Some(AudioDecrypt::new(key, audio_file))
     }
-    */
+
+    pub fn session(&self) -> &Session {
+        &self.session
+    }
+
+    pub fn into_session(self) -> Session {
+        self.session
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::io::Read;
+    use std::{
+        fs::OpenOptions,
+        io::{Read, Seek, SeekFrom, Write},
+    };
 
     use crate::*;
 
@@ -200,18 +185,30 @@ mod tests {
     async fn get_audio_file() {
         let beater = create().await;
 
-        let song = beater
-            .get_song(SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap())
+        let spotify_id = SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap();
+
+        let song = beater.get_audio_item(spotify_id).await.unwrap();
+
+        let (mut audio_file, _file_id) = beater
+            .get_audio_file(&song, FileFormat::OGG_VORBIS_160)
             .await
             .unwrap();
-        let mut file = beater
-            .get_audio_file(song, FileFormat::OGG_VORBIS_320)
-            .await
-            .unwrap();
+
+        audio_file.seek(SeekFrom::Start(0xA7)).unwrap();
 
         let mut buf = Vec::new();
-        file.read_to_end(&mut buf).unwrap();
+        audio_file.read_to_end(&mut buf).unwrap();
 
-        std::fs::write("song.ogg", buf).unwrap();
+        let mut file = OpenOptions::new()
+            .write(true)
+            .read(true)
+            .create(true)
+            .truncate(true)
+            .open("test.ogg")
+            .unwrap();
+
+        file.write_all(&buf).unwrap();
+
+        assert!(!buf.is_empty(), "the song is empty");
     }
 }
