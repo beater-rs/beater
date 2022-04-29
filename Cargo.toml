@@ -6,7 +6,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-librespot = { git = "https://github.com/beater-rs/librespot" }
+librespot = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
 thiserror = "1.0"
 
 [dev-dependencies]
