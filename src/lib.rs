@@ -1,7 +1,7 @@
 //! <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
 //! <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
 //! </p>
-//!
+
 use librespot::{
     audio::{AudioDecrypt, AudioFile},
     core::{

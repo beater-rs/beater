@@ -18,6 +18,9 @@ jobs:
                   override: true
                   components: rustfmt, rust-src
 
+            - name: Install ALSA
+              run: sudo apt install sudo apt install libasound2-dev -y
+
             - name: Build Documentation
               run: cargo doc --all
 
