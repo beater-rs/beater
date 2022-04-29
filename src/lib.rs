@@ -1,8 +1,7 @@
-//! <p class="compile_fail">
-//!  **Warning**: There is a <i>slight</i> chance that you will get banned by using this library.
-//!               Use at your own risk.
+//! <p style="background:rgba(255,181,77,0.16);padding:0.75em;">
+//! <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
 //! </p>
-
+//!
 use librespot::{
     audio::{AudioDecrypt, AudioFile},
     core::{
@@ -24,11 +23,6 @@ pub(crate) type Result<T> = std::result::Result<T, Error>;
 impl Beater {
     /// Creates a new [`Beater`] instance.
     ///
-    /// <p class="compile_fail">
-    ///  **Warning**: There is a <i>slight</i> chance that you will get banned by using this library.
-    ///               Use at your own risk.
-    /// </p>
-    ///
     /// # Examples
     ///
     /// ```
@@ -48,10 +42,8 @@ impl Beater {
         Ok(Self { session })
     }
 
-    pub async fn get_audio_item(&self, id: SpotifyId) -> Result<AudioItem> {
-        AudioItem::get_file(&self.session, id)
-            .await
-            .map_err(Error::from)
+    pub async fn get_track(&self, id: SpotifyId) -> Result<AudioItem> {
+        AudioItem::get_file(&self.session, id).await
     }
 
     pub async fn get_audio_file(
@@ -129,7 +121,7 @@ mod tests {
 
         let spotify_id = SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap();
 
-        let song = beater.get_audio_item(spotify_id).await.unwrap();
+        let song = beater.get_track(spotify_id).await.unwrap();
 
         let (mut audio_file, _file_id) = beater
             .get_audio_file(&song, AudioFileFormat::OGG_VORBIS_160)
