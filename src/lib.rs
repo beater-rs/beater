@@ -43,7 +43,21 @@ impl Beater {
     }
 
     pub async fn get_track(&self, id: SpotifyId) -> Result<AudioItem> {
-        AudioItem::get_file(&self.session, id).await
+        let mut audio_item = AudioItem::get_file(&self.session, id).await?;
+
+        if audio_item.availability.is_err() {
+            for id_ in *audio_item.alternatives.ok_or(Error::unavailable(""))? {
+                match self.get_track(id_).await {
+                    Ok(track) => return Ok(track),
+                    Err(err) => {
+                        if err.is_unavailable() {
+                            continue;
+                        }
+                        return Err(err);
+                    }
+                }
+            }
+        }
     }
 
     pub async fn get_audio_file(
@@ -133,6 +147,8 @@ mod tests {
         let mut buf = Vec::new();
         audio_file.read_to_end(&mut buf).unwrap();
 
+        assert!(!buf.is_empty(), "the song is empty");
+
         let mut file = OpenOptions::new()
             .write(true)
             .read(true)
@@ -142,7 +158,5 @@ mod tests {
             .unwrap();
 
         file.write_all(&buf).unwrap();
-
-        assert!(!buf.is_empty(), "the song is empty");
     }
 }
