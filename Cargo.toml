@@ -10,9 +10,10 @@ doctest = false
 
 
 [dependencies]
-librespot = { git = "https://github.com/librespot-org/librespot", rev = "e2233ba" }
+librespot = { git = "https://github.com/librespot-org/librespot", branch = "new-api" }
 
 [dev-dependencies]
 log = "0.4"
 simplelog = "0.12"
 tokio = { version = "1.18", features = ["macros", "rt-multi-thread"] }
+dotenvy = "0.15.1"

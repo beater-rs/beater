@@ -8,7 +8,7 @@ use librespot::{
         config::SessionConfig,
         error::Error,
         session::Session,
-        spotify_id::{FileId, SpotifyId},
+        spotify_id::{FileId, SpotifyId, SpotifyItemType},
     },
     discovery::Credentials,
     metadata::audio::{AudioFileFormat, AudioItem},
@@ -28,7 +28,7 @@ impl Beater {
     /// ```
     /// use beater::Beater;
     ///
-    /// let beater = Beater::new(username, password);
+    /// let beater = Beater::new("username", "password").await?;
     /// ```
     ///
     /// # Errors
@@ -42,22 +42,12 @@ impl Beater {
         Ok(Self { session })
     }
 
-    pub async fn get_track(&self, id: SpotifyId) -> Result<AudioItem> {
-        let mut audio_item = AudioItem::get_file(&self.session, id).await?;
-
-        if audio_item.availability.is_err() {
-            for id_ in *audio_item.alternatives.ok_or(Error::unavailable(""))? {
-                match self.get_track(id_).await {
-                    Ok(track) => return Ok(track),
-                    Err(err) => {
-                        if err.is_unavailable() {
-                            continue;
-                        }
-                        return Err(err);
-                    }
-                }
-            }
+    pub async fn get_track(&self, mut id: SpotifyId) -> Result<AudioItem> {
+        if id.item_type == SpotifyItemType::Unknown {
+            id.item_type = SpotifyItemType::Track;
         }
+
+        AudioItem::get_file(&self.session, id).await
     }
 
     pub async fn get_audio_file(
@@ -106,14 +96,15 @@ impl Beater {
 mod tests {
     use std::{
         env,
-        fs::OpenOptions,
-        io::{Read, Seek, SeekFrom, Write},
+        io::{Read, Seek, SeekFrom},
     };
 
     use crate::*;
 
     async fn create() -> Beater {
-        simplelog::SimpleLogger::init(log::LevelFilter::Debug, simplelog::Config::default()).ok();
+        let _ = dotenvy::from_filename(".env.test");
+        let _ =
+            simplelog::SimpleLogger::init(log::LevelFilter::Debug, simplelog::Config::default());
 
         Beater::new(
             env::var("SPOTIFY_USERNAME")
@@ -147,16 +138,6 @@ mod tests {
         let mut buf = Vec::new();
         audio_file.read_to_end(&mut buf).unwrap();
 
-        assert!(!buf.is_empty(), "the song is empty");
-
-        let mut file = OpenOptions::new()
-            .write(true)
-            .read(true)
-            .create(true)
-            .truncate(true)
-            .open("test.ogg")
-            .unwrap();
-
-        file.write_all(&buf).unwrap();
+        log::debug!("{}", buf.len());
     }
 }
