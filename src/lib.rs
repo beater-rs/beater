@@ -107,9 +107,8 @@ mod tests {
             simplelog::SimpleLogger::init(log::LevelFilter::Debug, simplelog::Config::default());
 
         Beater::new(
-            env::var("SPOTIFY_USERNAME")
-                .unwrap_or_else(|_| "31woy7dllvxal6lcroelpl5s2rhu".to_owned()),
-            env::var("SPOTIFY_PASSWORD").unwrap_or_else(|_| "idrcwhattoputasapassw0rd".to_owned()),
+            env::var("SPOTIFY_USERNAME").expect("SPOTIFY_USERNAME must be set"),
+            env::var("SPOTIFY_PASSWORD").expect("SPOTIFY_PASSWORD must be set"),
         )
         .await
         .unwrap()

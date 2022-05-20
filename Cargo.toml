@@ -10,7 +10,7 @@ doctest = false
 
 
 [dependencies]
-librespot = { git = "https://github.com/librespot-org/librespot", branch = "new-api" }
+librespot = { git = "https://github.com/librespot-org/librespot", rev = "e2233ba0" }
 
 [dev-dependencies]
 log = "0.4"
