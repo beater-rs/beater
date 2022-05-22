@@ -11,6 +11,9 @@ doctest = false
 
 [dependencies]
 librespot = { git = "https://github.com/librespot-org/librespot", rev = "e2233ba0" }
+http = "0.2"
+hyper = { version = "0.14", features = ["stream"] }
+futures = "0.3"
 
 [dev-dependencies]
 log = "0.4"

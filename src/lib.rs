@@ -2,20 +2,27 @@
 //! <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
 //! </p>
 
+use std::{
+    collections::HashMap,
+    io::{Cursor, Read, Seek, SeekFrom},
+};
+
 use librespot::{
-    audio::{AudioDecrypt, AudioFile},
+    audio::AudioDecrypt,
     core::{
+        cdn_url::CdnUrl,
         config::SessionConfig,
         error::Error,
         session::Session,
-        spotify_id::{FileId, SpotifyId, SpotifyItemType},
+        spotify_id::{FileId, SpotifyId},
     },
     discovery::Credentials,
     metadata::audio::{AudioFileFormat, AudioItem},
 };
 
 pub struct Beater {
-    pub(crate) session: Session,
+    pub session: Session,
+    pub cache: HashMap<FileId, AudioDecrypt<Cursor<Vec<u8>>>>,
 }
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
@@ -39,29 +46,46 @@ impl Beater {
         session
             .connect(Credentials::with_password(username, password))
             .await?;
-        Ok(Self { session })
-    }
-
-    pub async fn get_track(&self, mut id: SpotifyId) -> Result<AudioItem> {
-        if id.item_type == SpotifyItemType::Unknown {
-            id.item_type = SpotifyItemType::Track;
-        }
-
-        AudioItem::get_file(&self.session, id).await
+        Ok(Self {
+            session,
+            cache: HashMap::new(),
+        })
     }
 
     pub async fn get_audio_file(
         &self,
-        audio_item: &AudioItem,
+        track: SpotifyId,
         music_format: AudioFileFormat,
-    ) -> Result<(AudioDecrypt<AudioFile>, FileId)> {
-        if let Some(file_id) = audio_item.files.get(&music_format).copied() {
-            let encrypted = AudioFile::open(&self.session, file_id, 1024 * 1024).await?;
-            encrypted.get_stream_loader_controller()?.set_stream_mode();
+    ) -> Result<(AudioDecrypt<Cursor<Vec<u8>>>, FileId)> {
+        use futures::stream::StreamExt;
 
-            let decrypted = self
-                .decrypt_audio_file(audio_item.id, file_id, encrypted)
+        if let Some(file_id) = AudioItem::get_file(&self.session, track)
+            .await?
+            .files
+            .get(&music_format)
+            .copied()
+        {
+            let cdn_url = CdnUrl::new(file_id).resolve_audio(&self.session).await?;
+
+            let req = http::Request::builder()
+                .method(&http::Method::GET)
+                .uri(cdn_url.try_get_url()?)
+                .body(hyper::Body::empty())?;
+
+            let mut res = self.session.http_client().request(req).await?.into_body();
+
+            let mut raw_res = Vec::new();
+
+            while let Some(Ok(chunk)) = res.next().await {
+                raw_res.extend(&chunk);
+            }
+
+            let mut decrypted = self
+                .decrypt_audio_file(track, file_id, Cursor::new(raw_res))
                 .await?;
+
+            // Skip the encryption header
+            decrypted.seek(SeekFrom::Start(0xA7))?;
 
             Ok((decrypted, file_id))
         } else {
@@ -69,35 +93,22 @@ impl Beater {
         }
     }
 
-    pub(crate) async fn decrypt_audio_file(
+    pub(crate) async fn decrypt_audio_file<T: Read>(
         &self,
-        spotify_id: SpotifyId,
-        file_id: FileId,
-        audio_file: AudioFile,
-    ) -> Result<AudioDecrypt<AudioFile>> {
-        let key = self
-            .session
-            .audio_key()
-            .request(spotify_id, file_id)
-            .await?;
-        Ok(AudioDecrypt::new(Some(key), audio_file))
-    }
-
-    pub fn session(&self) -> &Session {
-        &self.session
-    }
-
-    pub fn into_session(self) -> Session {
-        self.session
+        track: SpotifyId,
+        file: FileId,
+        audio: T,
+    ) -> Result<AudioDecrypt<T>> {
+        Ok(AudioDecrypt::new(
+            Some(self.session.audio_key().request(track, file).await?),
+            audio,
+        ))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use std::{
-        env,
-        io::{Read, Seek, SeekFrom},
-    };
+    use std::{env, fs};
 
     use crate::*;
 
@@ -115,28 +126,22 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn new_beater() {
-        create().await;
-    }
-
-    #[tokio::test]
-    async fn get_audio_file() {
+    async fn music_file() {
         let beater = create().await;
 
-        let spotify_id = SpotifyId::from_base62("2QTDuJIGKUjR7E2Q6KupIh").unwrap();
-
-        let song = beater.get_track(spotify_id).await.unwrap();
+        // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
+        let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
 
         let (mut audio_file, _file_id) = beater
-            .get_audio_file(&song, AudioFileFormat::OGG_VORBIS_160)
+            .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
             .await
             .unwrap();
-
-        audio_file.seek(SeekFrom::Start(0xA7)).unwrap();
 
         let mut buf = Vec::new();
         audio_file.read_to_end(&mut buf).unwrap();
 
-        log::debug!("{}", buf.len());
+        let working = fs::read("test.ogg").unwrap();
+
+        assert_eq!(buf, working);
     }
 }
