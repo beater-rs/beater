@@ -8,7 +8,6 @@ edition = "2021"
 [lib]
 doctest = false
 
-
 [dependencies]
 librespot = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
 http = "0.2"
@@ -20,3 +19,7 @@ log = "0.4"
 simplelog = "0.12"
 tokio = { version = "1.18", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15.1"
+
+[features]
+default = ["cache"]
+cache = []

@@ -21,8 +21,9 @@ use librespot::{
 };
 
 pub struct Beater {
-    pub session: Session,
-    pub cache: HashMap<FileId, AudioDecrypt<Cursor<Vec<u8>>>>,
+    session: Session,
+    #[cfg(feature = "cache")]
+    cache: HashMap<FileId, Cursor<Vec<u8>>>,
 }
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
@@ -48,12 +49,31 @@ impl Beater {
             .await?;
         Ok(Self {
             session,
+            #[cfg(feature = "cache")]
             cache: HashMap::new(),
         })
     }
 
+    /// Creates a new [`Beater`] instance.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use beater::Beater;
+    ///
+    /// let beater = Beater::new(session).await?;
+    /// ```
+    ///
+    pub async fn new_with_session(session: Session) -> Self {
+        Self {
+            session,
+            #[cfg(feature = "cache")]
+            cache: HashMap::new(),
+        }
+    }
+
     pub async fn get_audio_file(
-        &self,
+        &mut self,
         track: SpotifyId,
         music_format: AudioFileFormat,
     ) -> Result<(AudioDecrypt<Cursor<Vec<u8>>>, FileId)> {
@@ -65,6 +85,15 @@ impl Beater {
             .get(&music_format)
             .copied()
         {
+            #[cfg(feature = "cache")]
+            if let Some(decrypted) = self.cache.get(&file_id) {
+                return Ok((
+                    self.decrypt_audio_file(track, file_id, decrypted.clone())
+                        .await?,
+                    file_id,
+                ));
+            }
+
             let cdn_url = CdnUrl::new(file_id).resolve_audio(&self.session).await?;
 
             let req = http::Request::builder()
@@ -80,12 +109,12 @@ impl Beater {
                 raw_res.extend(&chunk);
             }
 
-            let mut decrypted = self
-                .decrypt_audio_file(track, file_id, Cursor::new(raw_res))
-                .await?;
+            let encrypted = Cursor::new(raw_res);
 
-            // Skip the encryption header
-            decrypted.seek(SeekFrom::Start(0xA7))?;
+            #[cfg(feature = "cache")]
+            self.cache.insert(file_id, encrypted.clone());
+
+            let decrypted = self.decrypt_audio_file(track, file_id, encrypted).await?;
 
             Ok((decrypted, file_id))
         } else {
@@ -93,16 +122,21 @@ impl Beater {
         }
     }
 
-    pub(crate) async fn decrypt_audio_file<T: Read>(
+    pub async fn decrypt_audio_file<T: Read + Seek>(
         &self,
         track: SpotifyId,
-        file: FileId,
+        file_id: FileId,
         audio: T,
     ) -> Result<AudioDecrypt<T>> {
-        Ok(AudioDecrypt::new(
-            Some(self.session.audio_key().request(track, file).await?),
+        let mut decrypted = AudioDecrypt::new(
+            Some(self.session.audio_key().request(track, file_id).await?),
             audio,
-        ))
+        );
+
+        // Skip the encryption header
+        decrypted.seek(SeekFrom::Start(0xA7))?;
+
+        Ok(decrypted)
     }
 }
 
@@ -110,12 +144,10 @@ impl Beater {
 mod tests {
     use std::{env, fs};
 
-    use crate::*;
+    use super::*;
 
     async fn create() -> Beater {
         let _ = dotenvy::from_filename(".env.test");
-        let _ =
-            simplelog::SimpleLogger::init(log::LevelFilter::Debug, simplelog::Config::default());
 
         Beater::new(
             env::var("SPOTIFY_USERNAME").expect("SPOTIFY_USERNAME must be set"),
@@ -127,7 +159,7 @@ mod tests {
 
     #[tokio::test]
     async fn music_file() {
-        let beater = create().await;
+        let mut beater = create().await;
 
         // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
         let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
@@ -143,5 +175,31 @@ mod tests {
         let working = fs::read("test.ogg").unwrap();
 
         assert_eq!(buf, working);
+    }
+
+    // tests whether or not you get banned after 300 requests
+    // #[cfg(not(feature = "cache"))]
+    #[tokio::test]
+    async fn ban_test() {
+        let mut beater = create().await;
+
+        // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
+        let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
+
+        let working = fs::read("test.ogg").unwrap();
+
+        for i in 0..300 {
+            println!("Iteration {i}");
+
+            let (mut audio_file, _file_id) = beater
+                .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
+                .await
+                .unwrap();
+
+            let mut buf = Vec::new();
+            audio_file.read_to_end(&mut buf).unwrap();
+
+            assert_eq!(buf, working);
+        }
     }
 }
