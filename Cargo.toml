@@ -10,7 +10,7 @@ doctest = false
 
 
 [dependencies]
-librespot = { git = "https://github.com/librespot-org/librespot", rev = "e2233ba0" }
+librespot = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
 http = "0.2"
 hyper = { version = "0.14", features = ["stream"] }
 futures = "0.3"
