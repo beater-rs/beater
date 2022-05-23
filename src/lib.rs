@@ -179,27 +179,27 @@ mod tests {
 
     // tests whether or not you get banned after 300 requests
     // #[cfg(not(feature = "cache"))]
-    #[tokio::test]
-    async fn ban_test() {
-        let mut beater = create().await;
+    // #[tokio::test]
+    // async fn ban_test() {
+    //     let mut beater = create().await;
 
-        // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
-        let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
+    //     // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
+    //     let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
 
-        let working = fs::read("test.ogg").unwrap();
+    //     let working = fs::read("test.ogg").unwrap();
 
-        for i in 0..300 {
-            println!("Iteration {i}");
+    //     for i in 0..300 {
+    //         println!("Iteration {i}");
 
-            let (mut audio_file, _file_id) = beater
-                .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
-                .await
-                .unwrap();
+    //         let (mut audio_file, _file_id) = beater
+    //             .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
+    //             .await
+    //             .unwrap();
 
-            let mut buf = Vec::new();
-            audio_file.read_to_end(&mut buf).unwrap();
+    //         let mut buf = Vec::new();
+    //         audio_file.read_to_end(&mut buf).unwrap();
 
-            assert_eq!(buf, working);
-        }
-    }
+    //         assert_eq!(buf, working);
+    //     }
+    // }
 }
