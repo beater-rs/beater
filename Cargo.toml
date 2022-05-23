@@ -13,6 +13,10 @@ librespot = { git = "https://github.com/beater-rs/librespot", branch = "new-api"
 http = "0.2"
 hyper = { version = "0.14", features = ["stream"] }
 futures = "0.3"
+tokio = { version = "1.18", features = [
+    "macros",
+    "rt-multi-thread",
+], optional = true }
 
 [dev-dependencies]
 log = "0.4"
@@ -20,6 +24,14 @@ simplelog = "0.12"
 tokio = { version = "1.18", features = ["macros", "rt-multi-thread"] }
 dotenvy = "0.15.1"
 
+[[bin]]
+name = "beater"
+required-features = ["bin"]
+
 [features]
-default = ["cache"]
-cache = []
+bin = ["tokio"]
+
+[profile.release]
+opt-level = 3
+lto = true
+strip = true

@@ -38,12 +38,6 @@ jobs:
         strategy:
             matrix:
                 build: [stable, beta, nightly]
-                include:
-                    - build: beta
-                      rust: beta
-                    - build: nightly
-                      rust: nightly
-                      benches: true
 
         steps:
             - name: Checkout
@@ -52,9 +46,12 @@ jobs:
             - name: Install Rust
               uses: actions-rs/toolchain@v1
               with:
-                  toolchain: ${{ matrix.rust || 'stable' }}
+                  toolchain: ${{ matrix.build }}
                   profile: minimal
                   override: true
+
+            - name: Install ALSA
+              run: sudo apt-get install libasound2-dev -y
 
             - name: Build Debug
               uses: actions-rs/cargo@v1
@@ -102,6 +99,9 @@ jobs:
                   profile: minimal
                   override: true
                   target: ${{ matrix.target }}
+
+            - name: Install ALSA
+              run: sudo apt-get install libasound2-dev -y
 
             - name: Build Target
               uses: actions-rs/cargo@v1

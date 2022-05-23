@@ -21,8 +21,8 @@ use librespot::{
 };
 
 pub struct Beater {
-    session: Session,
-    cache: HashMap<FileId, Vec<u8>>,
+    pub session: Session,
+    pub cache: HashMap<FileId, Vec<u8>>,
 }
 
 pub const ENCRYPTED_HEADER_SIZE: u8 = 0xA7;
@@ -102,14 +102,15 @@ impl Beater {
                 raw_res.extend(&chunk);
             }
 
-            let mut encrypted = Cursor::new(raw_res);
-            // Skip the encryption header
-            encrypted.seek(SeekFrom::Start(ENCRYPTED_HEADER_SIZE as u64))?;
+            let encrypted = Cursor::new(raw_res);
 
             let audio_key = self.session.audio_key().request(track, file_id).await?;
             let encrypted_size = encrypted.get_ref().len() as u32;
 
             let mut decrypted_ = AudioDecrypt::new(Some(audio_key), encrypted);
+            // Skip the encryption header
+            decrypted_.seek(SeekFrom::Start(ENCRYPTED_HEADER_SIZE as u64))?;
+
             let mut decrypted = Vec::with_capacity(encrypted_size as usize);
 
             decrypted_.read_to_end(&mut decrypted)?;
@@ -155,6 +156,6 @@ mod tests {
 
         let working = fs::read("test.ogg").unwrap();
 
-        assert_eq!(audio_file, working);
+        assert!(audio_file == working);
     }
 }
