@@ -22,9 +22,10 @@ use librespot::{
 
 pub struct Beater {
     session: Session,
-    #[cfg(feature = "cache")]
-    cache: HashMap<FileId, Cursor<Vec<u8>>>,
+    cache: HashMap<FileId, Vec<u8>>,
 }
+
+pub const ENCRYPTED_HEADER_SIZE: u8 = 0xA7;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
 
@@ -49,7 +50,6 @@ impl Beater {
             .await?;
         Ok(Self {
             session,
-            #[cfg(feature = "cache")]
             cache: HashMap::new(),
         })
     }
@@ -58,16 +58,14 @@ impl Beater {
     ///
     /// # Examples
     ///
-    /// ```
+    /// ```no_run
     /// use beater::Beater;
     ///
-    /// let beater = Beater::new(session).await?;
+    /// let beater = Beater::new_with_session(session).await?;
     /// ```
-    ///
     pub async fn new_with_session(session: Session) -> Self {
         Self {
             session,
-            #[cfg(feature = "cache")]
             cache: HashMap::new(),
         }
     }
@@ -76,7 +74,7 @@ impl Beater {
         &mut self,
         track: SpotifyId,
         music_format: AudioFileFormat,
-    ) -> Result<(AudioDecrypt<Cursor<Vec<u8>>>, FileId)> {
+    ) -> Result<(Vec<u8>, FileId)> {
         use futures::stream::StreamExt;
 
         if let Some(file_id) = AudioItem::get_file(&self.session, track)
@@ -85,13 +83,8 @@ impl Beater {
             .get(&music_format)
             .copied()
         {
-            #[cfg(feature = "cache")]
             if let Some(decrypted) = self.cache.get(&file_id) {
-                return Ok((
-                    self.decrypt_audio_file(track, file_id, decrypted.clone())
-                        .await?,
-                    file_id,
-                ));
+                return Ok((decrypted.clone(), file_id));
             }
 
             let cdn_url = CdnUrl::new(file_id).resolve_audio(&self.session).await?;
@@ -109,34 +102,25 @@ impl Beater {
                 raw_res.extend(&chunk);
             }
 
-            let encrypted = Cursor::new(raw_res);
+            let mut encrypted = Cursor::new(raw_res);
+            // Skip the encryption header
+            encrypted.seek(SeekFrom::Start(ENCRYPTED_HEADER_SIZE as u64))?;
 
-            #[cfg(feature = "cache")]
-            self.cache.insert(file_id, encrypted.clone());
+            let audio_key = self.session.audio_key().request(track, file_id).await?;
+            let encrypted_size = encrypted.get_ref().len() as u32;
 
-            let decrypted = self.decrypt_audio_file(track, file_id, encrypted).await?;
+            let mut decrypted_ = AudioDecrypt::new(Some(audio_key), encrypted);
+            let mut decrypted = Vec::with_capacity(encrypted_size as usize);
+
+            decrypted_.read_to_end(&mut decrypted)?;
+            drop(decrypted_);
+
+            self.cache.insert(file_id, decrypted.clone());
 
             Ok((decrypted, file_id))
         } else {
             Err(Error::not_found(""))
         }
-    }
-
-    pub async fn decrypt_audio_file<T: Read + Seek>(
-        &self,
-        track: SpotifyId,
-        file_id: FileId,
-        audio: T,
-    ) -> Result<AudioDecrypt<T>> {
-        let mut decrypted = AudioDecrypt::new(
-            Some(self.session.audio_key().request(track, file_id).await?),
-            audio,
-        );
-
-        // Skip the encryption header
-        decrypted.seek(SeekFrom::Start(0xA7))?;
-
-        Ok(decrypted)
     }
 }
 
@@ -164,42 +148,13 @@ mod tests {
         // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
         let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
 
-        let (mut audio_file, _file_id) = beater
+        let (audio_file, _file_id) = beater
             .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
             .await
             .unwrap();
 
-        let mut buf = Vec::new();
-        audio_file.read_to_end(&mut buf).unwrap();
-
         let working = fs::read("test.ogg").unwrap();
 
-        assert_eq!(buf, working);
+        assert_eq!(audio_file, working);
     }
-
-    // tests whether or not you get banned after 300 requests
-    // #[cfg(not(feature = "cache"))]
-    // #[tokio::test]
-    // async fn ban_test() {
-    //     let mut beater = create().await;
-
-    //     // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
-    //     let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
-
-    //     let working = fs::read("test.ogg").unwrap();
-
-    //     for i in 0..300 {
-    //         println!("Iteration {i}");
-
-    //         let (mut audio_file, _file_id) = beater
-    //             .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
-    //             .await
-    //             .unwrap();
-
-    //         let mut buf = Vec::new();
-    //         audio_file.read_to_end(&mut buf).unwrap();
-
-    //         assert_eq!(buf, working);
-    //     }
-    // }
 }
