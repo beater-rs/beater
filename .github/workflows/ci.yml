@@ -24,11 +24,32 @@ jobs:
                   profile: minimal
                   override: true
 
-            - name: cargo fmt -- --check
+            - name: Check Style
               uses: actions-rs/cargo@v1
               with:
                   command: fmt
                   args: --all -- --check
+
+    clippy:
+        name: Check Clippy
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v1
+
+            - name: Install Rust
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  components: clippy
+                  profile: minimal
+                  override: true
+
+            - name: Check Clippy
+              uses: actions-rs/cargo@v1
+              with:
+                  command: fmt
+                  args: --all
 
     test:
         name: Test
@@ -126,7 +147,7 @@ jobs:
               uses: softprops/action-gh-release@v1
               # TODO: if any of the build step fails, the release should be deleted.
               with:
-                  files: target/${{ matrix.target }}/release/beater
+                  files: target/${{ matrix.target }}/release/beater-${{ matrix.target }}
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

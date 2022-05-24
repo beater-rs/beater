@@ -1,6 +1,6 @@
 use clap::Parser;
 use serde::{Deserialize, Serialize};
-use std::{fs, path::PathBuf};
+use std::{fs, path::PathBuf, io, error};
 
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
@@ -14,7 +14,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), Box<dyn error::Error>> {
     let credentials_file = std::env::var("BEATER_CREDENTIALS")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
@@ -25,6 +25,16 @@ async fn main() {
         });
 
     let args = Args::parse();
+
+    match fs::read_to_string(&credentials_file) {
+        Ok(contents) => {
+            let credentials = toml::from_str::<Credentials>(&contents)?;
+            println!("{:#?}", credentials);
+        }
+        Err(e) => {
+            println!("{}", e);
+        }
+    };
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, PartialOrd, Ord)]
