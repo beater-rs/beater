@@ -119,17 +119,10 @@ jobs:
                   command: build
                   args: --release --target ${{ matrix.target }}
 
-            - name: Package
-              shell: bash
-              run: |
-                  cd target/${{ matrix.target }}/release          
-                  tar czvf ../../../beater-${{ matrix.target }}.tar.gz beater
-                  cd -
-
             - name: Publish
               uses: softprops/action-gh-release@v1
               # TODO: if any of the build step fails, the release should be deleted.
               with:
-                  files: "beater*"
+                  files: target/${{ matrix.target }}/release/beater
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
