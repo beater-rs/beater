@@ -87,8 +87,8 @@ jobs:
                   publish_dir: ./target/doc
                   force_orphan: true
 
-    create-release:
-        name: release linux targets
+    create-linux-releases:
+        name: Release Linux Targets
         needs: [test]
         if: startsWith(github.ref, 'refs/tags/')
         runs-on: ubuntu-latest
@@ -117,12 +117,55 @@ jobs:
               with:
                   use-cross: true
                   command: build
-                  args: --release --target ${{ matrix.target }}
+                  args: --release --features bin --target ${{ matrix.target }}
+
+            - name: Rename Build Files
+              run: mv target/${{ matrix.target }}/release/beater target/${{ matrix.target }}/release/beater-${{ matrix.target }}
 
             - name: Publish
               uses: softprops/action-gh-release@v1
               # TODO: if any of the build step fails, the release should be deleted.
               with:
                   files: target/${{ matrix.target }}/release/beater
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    create-windows-releases:
+        name: Release Windows Targets
+        needs: [test]
+        if: startsWith(github.ref, 'refs/tags/')
+        runs-on: ubuntu-latest
+        strategy:
+            matrix:
+                target:
+                    - x86_64-pc-windows-gnu
+                    - i686-pc-windows-gnu
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v1
+            - name: Install Rust
+              uses: actions-rs/toolchain@v1
+              with:
+                  toolchain: stable
+                  profile: minimal
+                  override: true
+                  target: ${{ matrix.target }}
+
+            - name: Build Target
+              uses: actions-rs/cargo@v1
+              with:
+                  use-cross: true
+                  command: build
+                  args: --release --features bin --target ${{ matrix.target }}
+
+            - name: Rename Build Files
+              run: mv target/${{ matrix.target }}/release/beater.exe target/${{ matrix.target }}/release/beater-${{ matrix.target }}.exe
+
+            - name: Publish
+              uses: softprops/action-gh-release@v1
+              # TODO: if any of the build step fails, the release should be deleted.
+              with:
+                  files: target/${{ matrix.target }}/release/beater-${{ matrix.target }}.exe
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
