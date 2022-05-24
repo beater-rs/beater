@@ -7,6 +7,7 @@ use std::{
     io::{Cursor, Read, Seek, SeekFrom},
 };
 
+mod librespot;
 use librespot::{
     audio::AudioDecrypt,
     core::{
@@ -156,6 +157,7 @@ mod tests {
 
         let working = fs::read("test.ogg").unwrap();
 
+        // not using `assert_eq` because we don't want to print the diff
         assert!(audio_file == working);
     }
 }

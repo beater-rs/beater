@@ -9,14 +9,24 @@ edition = "2021"
 doctest = false
 
 [dependencies]
-librespot = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
+librespot-core = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
+librespot-audio = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
+librespot-discovery = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
+librespot-metadata = { git = "https://github.com/beater-rs/librespot", branch = "new-api" }
 http = "0.2"
 hyper = { version = "0.14", features = ["stream"] }
 futures = "0.3"
+
+# cli dependencies
 tokio = { version = "1.18", features = [
     "macros",
     "rt-multi-thread",
 ], optional = true }
+log = { version = "0.4", optional = true }
+clap = { version = "3.1", features = ["derive"], optional = true }
+dirs = { version = "4.0", optional = true }
+serde = { version = "1.0", features = ["derive"], optional = true }
+toml = { version = "0.5", optional = true }
 
 [dev-dependencies]
 log = "0.4"
@@ -29,7 +39,7 @@ name = "beater"
 required-features = ["bin"]
 
 [features]
-bin = ["tokio"]
+bin = ["tokio", "log", "clap", "dirs", "serde", "toml"]
 
 [profile.release]
 opt-level = 3
