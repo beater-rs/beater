@@ -32,7 +32,7 @@ jobs:
               uses: actions-rs/cargo@v1
               with:
                   command: test
-                  args: ${{ matrix.features }}
+                  args: --features bin
               env:
                   SPOTIFY_USERNAME: ${{ secrets.SPOTIFY_USERNAME }}
                   SPOTIFY_PASSWORD: ${{ secrets.SPOTIFY_PASSWORD }}
