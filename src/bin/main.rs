@@ -2,7 +2,7 @@ use auth::Credentials;
 use beater::Beater;
 use clap::Parser;
 use librespot_core::SpotifyId;
-use librespot_metadata::audio::AudioFileFormat;
+use librespot_metadata::{audio::AudioFileFormat, Artist, Metadata, Track};
 use std::{error, fs, path::PathBuf};
 
 mod auth;
@@ -53,6 +53,39 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
             std::process::exit(1);
         }
     };
+
+    let track_id = SpotifyId::from_uri(&format!("spotify:track:{}", args.track_id)).unwrap();
+    let track = Track::get(&beater.session, track_id).await?;
+
+    let track_name = track
+        .name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || *c == ' ')
+        .collect::<String>();
+
+    let artists = futures_util::future::join_all(
+        track
+            .artists
+            .iter()
+            .map(|id| async { Artist::get(&beater.session, *id).await.unwrap() }),
+    )
+    .await
+    .into_iter()
+    .map(|artist| {
+        artist
+            .name
+            .chars()
+            .filter(|c| c.is_ascii_alphanumeric() || *c == ' ')
+            .collect::<String>()
+    })
+    .collect::<Vec<String>>()
+    .join(", ");
+
+    let (audio_file, _file_id) = beater
+        .get_audio_file(track_id, AudioFileFormat::OGG_VORBIS_160)
+        .await?;
+
+    fs::write(format!("{track_name} - {artists}.ogg"), audio_file)?;
 
     Ok(())
 }
