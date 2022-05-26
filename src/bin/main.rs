@@ -91,12 +91,17 @@ async fn main() -> Result<()> {
         .await?;
 
     let file_name = format!("{track_name} - {artists}");
+    fs::write(format!("{file_name}.ogg"), audio_file)?;
 
     if track.has_lyrics {
-        println!("{:#?}", Lyrics::get(&beater.session, track_id).await);
+        fs::write(
+            format!("{file_name}.lrc"),
+            Lyrics::get(&beater.session, track_id)
+                .await?
+                .into_lrc_file()
+                .await?,
+        )?;
     }
-
-    fs::write(format!("{file_name}.ogg"), audio_file)?;
 
     Ok(())
 }
