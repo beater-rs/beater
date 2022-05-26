@@ -1,11 +1,16 @@
-use auth::Credentials;
 use beater::Beater;
 use clap::Parser;
 use librespot_core::SpotifyId;
 use librespot_metadata::{audio::AudioFileFormat, Artist, Metadata, Track};
 use std::{error, fs, path::PathBuf};
 
+type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
+
 mod auth;
+use auth::Credentials;
+
+mod lyrics;
+use lyrics::Lyrics;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -19,7 +24,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn error::Error>> {
+async fn main() -> Result<()> {
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::INFO)
         .without_time()
@@ -44,7 +49,7 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
     let args = Args::parse();
 
     let Credentials { username, password } =
-        auth::get_credentials(&credentials_path, args.username, args.password);
+        Credentials::new(&credentials_path, args.username, args.password);
 
     let mut beater = match Beater::new(username, password).await {
         Ok(beater) => beater,
@@ -85,7 +90,13 @@ async fn main() -> Result<(), Box<dyn error::Error>> {
         .get_audio_file(track_id, AudioFileFormat::OGG_VORBIS_160)
         .await?;
 
-    fs::write(format!("{track_name} - {artists}.ogg"), audio_file)?;
+    let file_name = format!("{track_name} - {artists}");
+
+    if track.has_lyrics {
+        println!("{:#?}", Lyrics::get(&beater.session, track_id).await);
+    }
+
+    fs::write(format!("{file_name}.ogg"), audio_file)?;
 
     Ok(())
 }
