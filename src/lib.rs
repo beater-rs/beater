@@ -230,7 +230,7 @@ mod tests {
         {
             // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
             let track = beater
-                .parse_uri("spotify:track:0iQJLCJyv6TTPUP4u4y8DJ")
+                .parse_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh")
                 .unwrap();
 
             assert!(matches!(

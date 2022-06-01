@@ -1,6 +1,6 @@
 [package]
 name = "beater"
-version = "0.1.0"
+version = "0.0.4-alpha"
 edition = "2021"
 description = "A program to download songs directly from Spotify"
 autobins = false
