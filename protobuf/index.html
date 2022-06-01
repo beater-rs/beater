@@ -1,0 +1,124 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Library to read and write protocol buffers data"><meta name="keywords" content="rust, rustlang, rust-lang, protobuf"><title>protobuf - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../protobuf/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../protobuf/index.html"><div class="logo-container"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate protobuf</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 2.27.1</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#constants">Constants</a></li><li><a href="#traits">Traits</a></li><li><a href="#functions">Functions</a></li></ul></div></section><div id="sidebar-vars" data-name="protobuf" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../protobuf/index.html"><img class="rust-logo" src="../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">protobuf</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/protobuf/lib.rs.html#1-192">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><h2 id="library-to-read-and-write-protocol-buffers-data"><a href="#library-to-read-and-write-protocol-buffers-data">Library to read and write protocol buffers data</a></h2><h2 id="version-2-is-stable"><a href="#version-2-is-stable">Version 2 is stable</a></h2>
+<p>Currently developed branch of rust-protobuf <a href="https://docs.rs/protobuf/%3E=3.0.0-alpha">is 3</a>.
+It has the same spirit as version 2, but contains numerous improvements like:</p>
+<ul>
+<li>runtime reflection for mutability, not just for access</li>
+<li>protobuf text format and JSON parsing (which rely on reflection)</li>
+<li>dynamic message support: work with protobuf data without generating code from schema</li>
+</ul>
+<p>Stable version of rust-protobuf will be supported until version 3 released.</p>
+<p><a href="https://github.com/stepancheg/rust-protobuf/issues/518">Tracking issue for version 3</a>.</p>
+<h2 id="how-to-generate-rust-code"><a href="#how-to-generate-rust-code">How to generate rust code</a></h2>
+<p>There are several ways to generate rust code from <code>.proto</code> files</p>
+<h3 id="invoke-protoc-programmatically-with-protoc-rust-crate-recommended"><a href="#invoke-protoc-programmatically-with-protoc-rust-crate-recommended">Invoke <code>protoc</code> programmatically with protoc-rust crate (recommended)</a></h3>
+<p>Have a look at readme in <a href="https://docs.rs/protoc-rust/=2">protoc-rust crate</a>.</p>
+<h3 id="use-pure-rust-protobuf-parser-and-code-generator"><a href="#use-pure-rust-protobuf-parser-and-code-generator">Use pure rust protobuf parser and code generator</a></h3>
+<p>Readme should be in
+<a href="https://docs.rs/protobuf-codegen-pure/=2">protobuf-codegen-pure crate</a>.</p>
+<h3 id="use-protoc-gen-rust-plugin"><a href="#use-protoc-gen-rust-plugin">Use protoc-gen-rust plugin</a></h3>
+<p>Readme is <a href="https://docs.rs/protobuf-codegen/=2">here</a>.</p>
+<h3 id="generated-code"><a href="#generated-code">Generated code</a></h3>
+<p>Have a look at generated files (for current development version),
+used internally in rust-protobuf:</p>
+<ul>
+<li><a href="https://github.com/stepancheg/rust-protobuf/blob/master/protobuf/src/descriptor.rs">descriptor.rs</a>
+for <a href="https://github.com/stepancheg/rust-protobuf/blob/master/protoc-bin-vendored/include/google/protobuf/descriptor.proto">descriptor.proto</a>
+(that is part of Google protobuf)</li>
+</ul>
+<h2 id="copy-on-write"><a href="#copy-on-write">Copy on write</a></h2>
+<p>Rust-protobuf can be used with <a href="https://github.com/tokio-rs/bytes">bytes crate</a>.</p>
+<p>To enable <code>Bytes</code> you need to:</p>
+<ol>
+<li>Enable <code>with-bytes</code> feature in rust-protobuf:</li>
+</ol>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code>[<span class="ident">dependencies</span>]
+<span class="ident">protobuf</span> <span class="op">=</span> { <span class="ident">version</span> <span class="op">=</span> <span class="string">&quot;~2.0&quot;</span>, <span class="ident">features</span> <span class="op">=</span> [<span class="string">&quot;with-bytes&quot;</span>] }</code></pre></div>
+<ol start="2">
+<li>Enable bytes option</li>
+</ol>
+<p>with <code>Customize</code> when codegen is invoked programmatically:</p>
+
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="ident">protoc_rust::run</span>(<span class="ident">protoc_rust::Args</span> {
+    ...
+    <span class="ident">customize</span>: <span class="ident">Customize</span> {
+        <span class="ident">carllerche_bytes_for_bytes</span>: <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+        <span class="ident">carllerche_bytes_for_string</span>: <span class="prelude-val">Some</span>(<span class="bool-val">true</span>),
+        ..<span class="ident">Default::default</span>()
+    },
+});</code></pre></div>
+<p>or in <code>.proto</code> file:</p>
+
+<div class='information'><div class='tooltip ignore'>ⓘ</div></div><div class="example-wrap"><pre class="rust rust-example-rendered ignore"><code><span class="ident">import</span> <span class="string">&quot;rustproto.proto&quot;</span>;
+
+<span class="ident">option</span> (<span class="ident">rustproto</span>.<span class="ident">carllerche_bytes_for_bytes_all</span>) <span class="op">=</span> <span class="bool-val">true</span>;
+<span class="ident">option</span> (<span class="ident">rustproto</span>.<span class="ident">carllerche_bytes_for_string_all</span>) <span class="op">=</span> <span class="bool-val">true</span>;</code></pre></div>
+<p>With these options enabled, fields of type <code>bytes</code> or <code>string</code> are
+generated as <code>Bytes</code> or <code>Chars</code> respectively. When <code>CodedInputStream</code> is constructed
+from <code>Bytes</code> object, fields of these types get subslices of original <code>Bytes</code> object,
+instead of being allocated on heap.</p>
+<h2 id="accompanying-crates"><a href="#accompanying-crates">Accompanying crates</a></h2>
+<ul>
+<li><a href="https://docs.rs/protoc-rust/=2"><code>protoc-rust</code></a>
+and <a href="https://docs.rs/protobuf-codegen-pure/=2"><code>protobuf-codegen-pure</code></a>
+can be used to rust code from <code>.proto</code> crates.</li>
+<li><a href="https://docs.rs/protobuf-codegen/=2"><code>protobuf-codegen</code></a> for <code>protoc-gen-rust</code> protoc plugin.</li>
+<li><a href="https://docs.rs/protoc/=2"><code>protoc</code></a> crate can be used to invoke <code>protoc</code> programmatically.</li>
+<li><a href="https://docs.rs/protoc-bin-vendored/=2"><code>protoc-bin-vendored</code></a> contains <code>protoc</code> command
+packed into the crate.</li>
+</ul>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left import-item"><code>pub use crate::error::<a class="enum" href="error/enum.ProtobufError.html" title="enum protobuf::error::ProtobufError">ProtobufError</a>;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use crate::error::<a class="type" href="error/type.ProtobufResult.html" title="type protobuf::error::ProtobufResult">ProtobufResult</a>;</code></div><div class="item-right docblock-short"></div></div></div><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="descriptor/index.html" title="protobuf::descriptor mod">descriptor</a></div><div class="item-right docblock-short"><p>Generated file from <code>google/protobuf/descriptor.proto</code></p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="error/index.html" title="protobuf::error mod">error</a></div><div class="item-right docblock-short"><p>Protobuf error type</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="ext/index.html" title="protobuf::ext mod">ext</a></div><div class="item-right docblock-short"><p>Utilities to support “extension” fields.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="json/index.html" title="protobuf::json mod">json</a></div><div class="item-right docblock-short"><p>JSON serialization and deserialization.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="lazy/index.html" title="protobuf::lazy mod">lazy</a></div><div class="item-right docblock-short"><p>Lazily initialized data.
+Used in generated code.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="plugin/index.html" title="protobuf::plugin mod">plugin</a></div><div class="item-right docblock-short"><p>Generated file from <code>google/protobuf/compiler/plugin.proto</code></p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="reflect/index.html" title="protobuf::reflect mod">reflect</a></div><div class="item-right docblock-short"><p>Reflection implementation for protobuf types.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="rt/index.html" title="protobuf::rt mod">rt</a></div><div class="item-right docblock-short"><p>Functions used by generated protobuf code.
+Should not be used by programs written by hands.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="rustproto/index.html" title="protobuf::rustproto mod">rustproto</a></div><div class="item-right docblock-short"><p>Generated file from <code>rustproto.proto</code></p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="text_format/index.html" title="protobuf::text_format mod">text_format</a></div><div class="item-right docblock-short"><p>Protobuf “text format” implementation.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="types/index.html" title="protobuf::types mod">types</a></div><div class="item-right docblock-short"><p>Implementations of <code>ProtobufType</code> for all types.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="well_known_types/index.html" title="protobuf::well_known_types mod">well_known_types</a></div><div class="item-right docblock-short"><p>Generated code for “well known types”</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="wire_format/index.html" title="protobuf::wire_format mod">wire_format</a></div><div class="item-right docblock-short"><p>Serialization constants.</p>
+</div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.CachedSize.html" title="protobuf::CachedSize struct">CachedSize</a></div><div class="item-right docblock-short"><p>Cached size field used in generated code.
+It is always equal to itself to simplify generated code.
+(Generated code can use <code>#[derive(Eq)]</code>).</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.CodedInputStream.html" title="protobuf::CodedInputStream struct">CodedInputStream</a></div><div class="item-right docblock-short"><p>Buffered read with handy utilities.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.CodedOutputStream.html" title="protobuf::CodedOutputStream struct">CodedOutputStream</a></div><div class="item-right docblock-short"><p>Buffered write with handy utilities</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.RepeatedField.html" title="protobuf::RepeatedField struct">RepeatedField</a></div><div class="item-right docblock-short"><p>Wrapper around vector to avoid deallocations on clear.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SingularField.html" title="protobuf::SingularField struct">SingularField</a></div><div class="item-right docblock-short"><p>Like <code>Option&lt;T&gt;</code>, but keeps the actual element on <code>clear</code>.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SingularPtrField.html" title="protobuf::SingularPtrField struct">SingularPtrField</a></div><div class="item-right docblock-short"><p>Like <code>Option&lt;Box&lt;T&gt;&gt;</code>, but keeps the actual element on <code>clear</code>.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.UnknownFields.html" title="protobuf::UnknownFields struct">UnknownFields</a></div><div class="item-right docblock-short"><p>Hold “unknown” fields in parsed message.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.UnknownFieldsIter.html" title="protobuf::UnknownFieldsIter struct">UnknownFieldsIter</a></div><div class="item-right docblock-short"><p>Iterator over <a href="struct.UnknownFields.html"><code>UnknownFields</code></a></p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.UnknownValues.html" title="protobuf::UnknownValues struct">UnknownValues</a></div><div class="item-right docblock-short"><p>Field unknown values.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.UnknownValuesIter.html" title="protobuf::UnknownValuesIter struct">UnknownValuesIter</a></div><div class="item-right docblock-short"><p>Iterator over unknown values</p>
+</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.UnknownValue.html" title="protobuf::UnknownValue enum">UnknownValue</a></div><div class="item-right docblock-short"><p>Unknown value.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.UnknownValueRef.html" title="protobuf::UnknownValueRef enum">UnknownValueRef</a></div><div class="item-right docblock-short"><p>Reference to unknown value.</p>
+</div></div></div><h2 id="constants" class="small-section-header"><a href="#constants">Constants</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="constant" href="constant.VERSION.html" title="protobuf::VERSION constant">VERSION</a></div><div class="item-right docblock-short"><p>protobuf crate version</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="constant" href="constant.VERSION_2_27_1.html" title="protobuf::VERSION_2_27_1 constant">VERSION_2_27_1</a></div><div class="item-right docblock-short"><p>This symbol can be referenced to assert that proper version of crate is used</p>
+</div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.Clear.html" title="protobuf::Clear trait">Clear</a></div><div class="item-right docblock-short"><p>anything that can be cleared</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.Message.html" title="protobuf::Message trait">Message</a></div><div class="item-right docblock-short"><p>Trait implemented for all generated structs for protobuf messages.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.ProtobufEnum.html" title="protobuf::ProtobufEnum trait">ProtobufEnum</a></div><div class="item-right docblock-short"><p>Trait implemented by all protobuf enum types.</p>
+</div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_from_bytes.html" title="protobuf::parse_from_bytes fn">parse_from_bytes</a><span class="stab deprecated" title="">Deprecated</span></div><div class="item-right docblock-short"><p>Parse message from byte array.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_from_reader.html" title="protobuf::parse_from_reader fn">parse_from_reader</a><span class="stab deprecated" title="">Deprecated</span></div><div class="item-right docblock-short"><p>Parse message from reader.
+Parse stops on EOF or when error encountered.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_length_delimited_from.html" title="protobuf::parse_length_delimited_from fn">parse_length_delimited_from</a><span class="stab deprecated" title="">Deprecated</span></div><div class="item-right docblock-short"><p>Parse length-delimited message from stream.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_length_delimited_from_bytes.html" title="protobuf::parse_length_delimited_from_bytes fn">parse_length_delimited_from_bytes</a><span class="stab deprecated" title="">Deprecated</span></div><div class="item-right docblock-short"><p>Parse length-delimited message from bytes.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.parse_length_delimited_from_reader.html" title="protobuf::parse_length_delimited_from_reader fn">parse_length_delimited_from_reader</a><span class="stab deprecated" title="">Deprecated</span></div><div class="item-right docblock-short"><p>Parse length-delimited message from <code>Read</code>.</p>
+</div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="protobuf" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

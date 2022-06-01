@@ -1,0 +1,1 @@
+initSidebarItems({"trait":[["ExtendedGcd","Generic trait to implement extended GCD. Calculates the extended eucledian algorithm. See https://en.wikipedia.org/wiki/Extended_Euclidean_algorithm for details. The returned values are"],["ModInverse","Generic trait to implement modular inverse."]]});

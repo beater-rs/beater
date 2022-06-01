@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Serde `Deserializer` module"><meta name="keywords" content="rust, rustlang, rust-lang, de"><title>quick_xml::de - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script>
+    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc mod"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../quick_xml/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../../quick_xml/index.html"><div class="logo-container"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Module de</a></h2><div class="sidebar-elems"><section><div class="block"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#functions">Functions</a></li></ul></div></section><div id="sidebar-vars" data-name="de" data-ty="mod" data-relpath="./"></div><script defer src="./sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../quick_xml/index.html"><img class="rust-logo" src="../../rust-logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Module <a href="../index.html">quick_xml</a>::<wbr><a class="mod" href="#">de</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../../src/quick_xml/de/mod.rs.html#1-1529">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Serde <code>Deserializer</code> module</p>
+<h2 id="examples"><a href="#examples">Examples</a></h2>
+<p>Here is a simple example parsing <a href="https://crates.io/">crates.io</a> source code.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="comment">// Cargo.toml</span>
+<span class="comment">// [dependencies]</span>
+<span class="comment">// serde = { version = &quot;1.0&quot;, features = [ &quot;derive&quot; ] }</span>
+<span class="comment">// quick-xml = { version = &quot;0.21&quot;, features = [ &quot;serialize&quot; ] }</span>
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">serde</span>;
+<span class="kw">extern</span> <span class="kw">crate</span> <span class="ident">quick_xml</span>;
+
+<span class="kw">use</span> <span class="ident">serde::Deserialize</span>;
+<span class="kw">use</span> <span class="ident">quick_xml::de</span>::{<span class="ident">from_str</span>, <span class="ident">DeError</span>};
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Link</span> {
+    <span class="ident">rel</span>: <span class="ident">String</span>,
+    <span class="ident">href</span>: <span class="ident">String</span>,
+    <span class="ident">sizes</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename_all</span> <span class="op">=</span> <span class="string">&quot;lowercase&quot;</span>)]</span>
+<span class="kw">enum</span> <span class="ident">Lang</span> {
+    <span class="ident">En</span>,
+    <span class="ident">Fr</span>,
+    <span class="ident">De</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Head</span> {
+    <span class="ident">title</span>: <span class="ident">String</span>,
+    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;link&quot;</span>, <span class="ident">default</span>)]</span>
+    <span class="ident">links</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Link</span><span class="op">&gt;</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Script</span> {
+    <span class="ident">src</span>: <span class="ident">String</span>,
+    <span class="ident">integrity</span>: <span class="ident">String</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Body</span> {
+    <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">rename</span> <span class="op">=</span> <span class="string">&quot;script&quot;</span>, <span class="ident">default</span>)]</span>
+    <span class="ident">scripts</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">Script</span><span class="op">&gt;</span>,
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Deserialize</span>, <span class="ident">PartialEq</span>)]</span>
+<span class="kw">struct</span> <span class="ident">Html</span> {
+    <span class="ident">lang</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span>,
+    <span class="ident">head</span>: <span class="ident">Head</span>,
+    <span class="ident">body</span>: <span class="ident">Body</span>,
+}
+
+<span class="kw">fn</span> <span class="ident">crates_io</span>() -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Html</span>, <span class="ident">DeError</span><span class="op">&gt;</span> {
+    <span class="kw">let</span> <span class="ident">xml</span> <span class="op">=</span> <span class="string">&quot;&lt;!DOCTYPE html&gt;
+        &lt;html lang=\&quot;en\&quot;&gt;
+          &lt;head&gt;
+            &lt;meta charset=\&quot;utf-8\&quot;&gt;
+            &lt;meta http-equiv=\&quot;X-UA-Compatible\&quot; content=\&quot;IE=edge\&quot;&gt;
+            &lt;meta name=\&quot;viewport\&quot; content=\&quot;width=device-width, initial-scale=1\&quot;&gt;
+
+            &lt;title&gt;crates.io: Rust Package Registry&lt;/title&gt;
+
+
+        &lt;meta name=\&quot;cargo/config/environment\&quot; content=\&quot;%7B%22modulePrefix%22%3A%22cargo%22%2C%22environment%22%3A%22production%22%2C%22rootURL%22%3A%22%2F%22%2C%22locationType%22%3A%22router-scroll%22%2C%22historySupportMiddleware%22%3Atrue%2C%22EmberENV%22%3A%7B%22FEATURES%22%3A%7B%7D%2C%22EXTEND_PROTOTYPES%22%3A%7B%22Date%22%3Afalse%7D%7D%2C%22APP%22%3A%7B%22name%22%3A%22cargo%22%2C%22version%22%3A%22b7796c9%22%7D%2C%22fastboot%22%3A%7B%22hostWhitelist%22%3A%5B%22crates.io%22%2C%7B%7D%2C%7B%7D%5D%7D%2C%22ember-cli-app-version%22%3A%7B%22version%22%3A%22b7796c9%22%7D%2C%22ember-cli-mirage%22%3A%7B%22usingProxy%22%3Afalse%2C%22useDefaultPassthroughs%22%3Atrue%7D%2C%22exportApplicationGlobal%22%3Afalse%7D\&quot; /&gt;
+        &lt;!-- EMBER_CLI_FASTBOOT_TITLE --&gt;&lt;!-- EMBER_CLI_FASTBOOT_HEAD --&gt;
+        &lt;link rel=\&quot;manifest\&quot; href=\&quot;/manifest.webmanifest\&quot;&gt;
+        &lt;link rel=\&quot;apple-touch-icon\&quot; href=\&quot;/cargo-835dd6a18132048a52ac569f2615b59d.png\&quot; sizes=\&quot;227x227\&quot;&gt;
+        &lt;meta name=\&quot;theme-color\&quot; content=\&quot;#f9f7ec\&quot;&gt;
+        &lt;meta name=\&quot;apple-mobile-web-app-capable\&quot; content=\&quot;yes\&quot;&gt;
+        &lt;meta name=\&quot;apple-mobile-web-app-title\&quot; content=\&quot;crates.io: Rust Package Registry\&quot;&gt;
+        &lt;meta name=\&quot;apple-mobile-web-app-status-bar-style\&quot; content=\&quot;default\&quot;&gt;
+
+            &lt;link rel=\&quot;stylesheet\&quot; href=\&quot;/assets/vendor-8d023d47762d5431764f589a6012123e.css\&quot; integrity=\&quot;sha256-EoB7fsYkdS7BZba47+C/9D7yxwPZojsE4pO7RIuUXdE= sha512-/SzGQGR0yj5AG6YPehZB3b6MjpnuNCTOGREQTStETobVRrpYPZKneJwcL/14B8ufcvobJGFDvnTKdcDDxbh6/A==\&quot; &gt;
+            &lt;link rel=\&quot;stylesheet\&quot; href=\&quot;/assets/cargo-cedb8082b232ce89dd449d869fb54b98.css\&quot; integrity=\&quot;sha256-S9K9jZr6nSyYicYad3JdiTKrvsstXZrvYqmLUX9i3tc= sha512-CDGjy3xeyiqBgUMa+GelihW394pqAARXwsU+HIiOotlnp1sLBVgO6v2ZszL0arwKU8CpvL9wHyLYBIdfX92YbQ==\&quot; &gt;
+
+
+            &lt;link rel=\&quot;shortcut icon\&quot; href=\&quot;/favicon.ico\&quot; type=\&quot;image/x-icon\&quot;&gt;
+            &lt;link rel=\&quot;icon\&quot; href=\&quot;/cargo-835dd6a18132048a52ac569f2615b59d.png\&quot; type=\&quot;image/png\&quot;&gt;
+            &lt;link rel=\&quot;search\&quot; href=\&quot;/opensearch.xml\&quot; type=\&quot;application/opensearchdescription+xml\&quot; title=\&quot;Cargo\&quot;&gt;
+          &lt;/head&gt;
+          &lt;body&gt;
+            &lt;!-- EMBER_CLI_FASTBOOT_BODY --&gt;
+            &lt;noscript&gt;
+                &lt;div id=\&quot;main\&quot;&gt;
+                    &lt;div class=&#39;noscript&#39;&gt;
+                        This site requires JavaScript to be enabled.
+                    &lt;/div&gt;
+                &lt;/div&gt;
+            &lt;/noscript&gt;
+
+            &lt;script src=\&quot;/assets/vendor-bfe89101b20262535de5a5ccdc276965.js\&quot; integrity=\&quot;sha256-U12Xuwhz1bhJXWyFW/hRr+Wa8B6FFDheTowik5VLkbw= sha512-J/cUUuUN55TrdG8P6Zk3/slI0nTgzYb8pOQlrXfaLgzr9aEumr9D1EzmFyLy1nrhaDGpRN1T8EQrU21Jl81pJQ==\&quot; &gt;&lt;/script&gt;
+            &lt;script src=\&quot;/assets/cargo-4023b68501b7b3e17b2bb31f50f5eeea.js\&quot; integrity=\&quot;sha256-9atimKc1KC6HMJF/B07lP3Cjtgr2tmET8Vau0Re5mVI= sha512-XJyBDQU4wtA1aPyPXaFzTE5Wh/mYJwkKHqZ/Fn4p/ezgdKzSCFu6FYn81raBCnCBNsihfhrkb88uF6H5VraHMA==\&quot; &gt;&lt;/script&gt;
+
+
+          &lt;/body&gt;
+        &lt;/html&gt;
+}&quot;</span>;
+    <span class="kw">let</span> <span class="ident">html</span>: <span class="ident">Html</span> <span class="op">=</span> <span class="ident">from_str</span>(<span class="ident">xml</span>)<span class="question-mark">?</span>;
+    <span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">html</span>.<span class="ident">head</span>.<span class="ident">title</span>, <span class="string">&quot;crates.io: Rust Package Registr&quot;</span>);
+    <span class="prelude-val">Ok</span>(<span class="ident">html</span>)
+}</code></pre></div>
+</div></details><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Deserializer.html" title="quick_xml::de::Deserializer struct">Deserializer</a></div><div class="item-right docblock-short"><p>An xml deserializer</p>
+</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.DeError.html" title="quick_xml::de::DeError enum">DeError</a></div><div class="item-right docblock-short"><p>(De)serialization error</p>
+</div></div></div><h2 id="functions" class="small-section-header"><a href="#functions">Functions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.from_reader.html" title="quick_xml::de::from_reader fn">from_reader</a></div><div class="item-right docblock-short"><p>Deserialize from a reader</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="fn" href="fn.from_str.html" title="quick_xml::de::from_str fn">from_str</a></div><div class="item-right docblock-short"><p>Deserialize a xml string</p>
+</div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="quick_xml" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

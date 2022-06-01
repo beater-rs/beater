@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["file_descriptor_proto",""]],"struct":[["MutatedField",""],["MutationCommand",""],["UserAttributesMutation","Generated files are compatible only with the same version of protobuf runtime."]]});

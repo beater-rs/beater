@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CacheError",""]],"struct":[["Cache","A cache for volume, credentials and audio files."]]});

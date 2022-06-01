@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["MercuryError",""],["MercuryMethod",""]],"struct":[["MercuryFuture",""],["MercuryManager",""],["MercuryPending",""],["MercuryRequest",""],["MercuryResponse",""],["MercurySender",""]]});

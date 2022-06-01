@@ -1,0 +1,1 @@
+initSidebarItems({"mod":[["album",""],["artist",""],["audio",""],["availability",""],["content_rating",""],["copyright",""],["episode",""],["error",""],["external_id",""],["image",""],["playlist",""],["restriction",""],["sale_period",""],["show",""],["track",""],["video",""]],"trait":[["Metadata",""]]});

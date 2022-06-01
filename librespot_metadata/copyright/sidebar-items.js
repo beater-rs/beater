@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CopyrightType",""]],"struct":[["Copyright",""],["Copyrights",""]]});

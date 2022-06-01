@@ -1,0 +1,1 @@
+initSidebarItems({"fn":[["file_descriptor_proto",""]],"struct":[["Artist","Generated files are compatible only with the same version of protobuf runtime."],["EntityCanvazRequest",""],["EntityCanvazRequest_Entity",""],["EntityCanvazResponse",""],["EntityCanvazResponse_Canvaz",""]]});

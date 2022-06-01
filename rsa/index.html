@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="RSA Implementation in pure Rust."><meta name="keywords" content="rust, rustlang, rust-lang, rsa"><title>rsa - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../favicon.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../rsa/index.html"><div class="logo-container"><img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../rsa/index.html"><div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate rsa</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.5.0</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#modules">Modules</a></li><li><a href="#structs">Structs</a></li><li><a href="#traits">Traits</a></li></ul></div></section><div id="sidebar-vars" data-name="rsa" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../rsa/index.html">
+                        <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">rsa</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/rsa/lib.rs.html#1-221">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>RSA Implementation in pure Rust.</p>
+<h2 id="usage"><a href="#usage">Usage</a></h2>
+<p>Using PKCS1v15.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">rsa</span>::{<span class="ident">PublicKey</span>, <span class="ident">RsaPrivateKey</span>, <span class="ident">RsaPublicKey</span>, <span class="ident">PaddingScheme</span>};
+<span class="kw">use</span> <span class="ident">rand::rngs::OsRng</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">OsRng</span>;
+<span class="kw">let</span> <span class="ident">bits</span> <span class="op">=</span> <span class="number">2048</span>;
+<span class="kw">let</span> <span class="ident">private_key</span> <span class="op">=</span> <span class="ident">RsaPrivateKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">bits</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to generate a key&quot;</span>);
+<span class="kw">let</span> <span class="ident">public_key</span> <span class="op">=</span> <span class="ident">RsaPublicKey::from</span>(<span class="kw-2">&amp;</span><span class="ident">private_key</span>);
+
+<span class="comment">// Encrypt</span>
+<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="string">b&quot;hello world&quot;</span>;
+<span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_pkcs1v15_encrypt</span>();
+<span class="kw">let</span> <span class="ident">enc_data</span> <span class="op">=</span> <span class="ident">public_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>[..]).<span class="ident">expect</span>(<span class="string">&quot;failed to encrypt&quot;</span>);
+<span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[..], <span class="kw-2">&amp;</span><span class="ident">enc_data</span>[..]);
+
+<span class="comment">// Decrypt</span>
+<span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_pkcs1v15_encrypt</span>();
+<span class="kw">let</span> <span class="ident">dec_data</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">decrypt</span>(<span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">enc_data</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to decrypt&quot;</span>);
+<span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[..], <span class="kw-2">&amp;</span><span class="ident">dec_data</span>[..]);</code></pre></div>
+<p>Using OAEP.</p>
+
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">rsa</span>::{<span class="ident">PublicKey</span>, <span class="ident">RsaPrivateKey</span>, <span class="ident">RsaPublicKey</span>, <span class="ident">PaddingScheme</span>};
+<span class="kw">use</span> <span class="ident">rand::rngs::OsRng</span>;
+<span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">OsRng</span>;
+
+<span class="kw">let</span> <span class="ident">bits</span> <span class="op">=</span> <span class="number">2048</span>;
+<span class="kw">let</span> <span class="ident">private_key</span> <span class="op">=</span> <span class="ident">RsaPrivateKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">bits</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to generate a key&quot;</span>);
+<span class="kw">let</span> <span class="ident">public_key</span> <span class="op">=</span> <span class="ident">RsaPublicKey::from</span>(<span class="kw-2">&amp;</span><span class="ident">private_key</span>);
+
+<span class="comment">// Encrypt</span>
+<span class="kw">let</span> <span class="ident">data</span> <span class="op">=</span> <span class="string">b&quot;hello world&quot;</span>;
+<span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep</span>::<span class="op">&lt;</span><span class="ident">sha2::Sha256</span><span class="op">&gt;</span>();
+<span class="kw">let</span> <span class="ident">enc_data</span> <span class="op">=</span> <span class="ident">public_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">data</span>[..]).<span class="ident">expect</span>(<span class="string">&quot;failed to encrypt&quot;</span>);
+<span class="macro">assert_ne!</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[..], <span class="kw-2">&amp;</span><span class="ident">enc_data</span>[..]);
+
+<span class="comment">// Decrypt</span>
+<span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep</span>::<span class="op">&lt;</span><span class="ident">sha2::Sha256</span><span class="op">&gt;</span>();
+<span class="kw">let</span> <span class="ident">dec_data</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">decrypt</span>(<span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">enc_data</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to decrypt&quot;</span>);
+<span class="macro">assert_eq!</span>(<span class="kw-2">&amp;</span><span class="ident">data</span>[..], <span class="kw-2">&amp;</span><span class="ident">dec_data</span>[..]);</code></pre></div>
+<h3 id="pkcs1-rsa-key-encoding"><a href="#pkcs1-rsa-key-encoding">PKCS#1 RSA Key Encoding</a></h3>
+<p>PKCS#1 is a legacy format for encoding RSA keys as binary (DER) or text
+(PEM) data.</p>
+<p>You can recognize PEM encoded PKCS#1 keys because they have “RSA * KEY” in
+the type label, e.g.:</p>
+<div class="example-wrap"><pre class="language-text"><code>-----BEGIN RSA PRIVATE KEY-----</code></pre></div>
+<p>Most modern applications use the newer PKCS#8 format instead (see below).</p>
+<p>The following traits can be used to decode/encode <a href="struct.RsaPrivateKey.html" title="RsaPrivateKey"><code>RsaPrivateKey</code></a> and
+<a href="struct.RsaPublicKey.html" title="RsaPublicKey"><code>RsaPublicKey</code></a> as PKCS#1. Note that <a href="../pkcs1/index.html" title="pkcs1"><code>pkcs1</code></a> is re-exported from the
+toplevel of the <code>rsa</code> crate:</p>
+<ul>
+<li><a href="../pkcs1/traits/trait.FromRsaPrivateKey.html" title="pkcs1::FromRsaPrivateKey"><code>pkcs1::FromRsaPrivateKey</code></a>: decode RSA private keys from PKCS#1</li>
+<li><a href="../pkcs1/traits/trait.FromRsaPublicKey.html" title="pkcs1::FromRsaPublicKey"><code>pkcs1::FromRsaPublicKey</code></a>: decode RSA public keys from PKCS#1</li>
+<li><a href="../pkcs1/traits/trait.ToRsaPrivateKey.html" title="pkcs1::ToRsaPrivateKey"><code>pkcs1::ToRsaPrivateKey</code></a>: encode RSA private keys to PKCS#1</li>
+<li><a href="../pkcs1/traits/trait.ToRsaPublicKey.html" title="pkcs1::ToRsaPublicKey"><code>pkcs1::ToRsaPublicKey</code></a>: encode RSA public keys to PKCS#1</li>
+</ul>
+<h4 id="example"><a href="#example">Example</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">rsa</span>::{<span class="ident">RsaPublicKey</span>, <span class="ident">pkcs1::FromRsaPublicKey</span>};
+
+<span class="kw">let</span> <span class="ident">pem</span> <span class="op">=</span> <span class="string">&quot;-----BEGIN RSA PUBLIC KEY-----
+MIIBCgKCAQEAtsQsUV8QpqrygsY+2+JCQ6Fw8/omM71IM2N/R8pPbzbgOl0p78MZ
+GsgPOQ2HSznjD0FPzsH8oO2B5Uftws04LHb2HJAYlz25+lN5cqfHAfa3fgmC38Ff
+wBkn7l582UtPWZ/wcBOnyCgb3yLcvJrXyrt8QxHJgvWO23ITrUVYszImbXQ67YGS
+0YhMrbixRzmo2tpm3JcIBtnHrEUMsT0NfFdfsZhTT8YbxBvA8FdODgEwx7u/vf3J
+9qbi4+Kv8cvqyJuleIRSjVXPsIMnoejIn04APPKIjpMyQdnWlby7rNyQtE4+CV+j
+cFjqJbE/Xilcvqxt6DirjFCvYeKYl1uHLwIDAQAB
+-----END RSA PUBLIC KEY-----&quot;</span>;
+
+<span class="kw">let</span> <span class="ident">public_key</span> <span class="op">=</span> <span class="ident">RsaPublicKey::from_pkcs1_pem</span>(<span class="ident">pem</span>)<span class="question-mark">?</span>;</code></pre></div>
+<h3 id="pkcs8-rsa-key-encoding"><a href="#pkcs8-rsa-key-encoding">PKCS#8 RSA Key Encoding</a></h3>
+<p>PKCS#8 is a private key format with support for multiple algorithms.
+Like PKCS#1, it can be encoded as binary (DER) or text (PEM).</p>
+<p>You can recognize PEM encoded PKCS#8 keys because they <em>don’t</em> have
+an algorithm name in the type label, e.g.:</p>
+<div class="example-wrap"><pre class="language-text"><code>-----BEGIN PRIVATE KEY-----</code></pre></div>
+<p>The following traits can be used to decode/encode <a href="struct.RsaPrivateKey.html" title="RsaPrivateKey"><code>RsaPrivateKey</code></a> and
+<a href="struct.RsaPublicKey.html" title="RsaPublicKey"><code>RsaPublicKey</code></a> as PKCS#8. Note that <a href="../pkcs8/index.html" title="pkcs8"><code>pkcs8</code></a> is re-exported from the
+toplevel of the <code>rsa</code> crate:</p>
+<ul>
+<li><a href="../pkcs8/traits/trait.FromPrivateKey.html" title="pkcs8::FromPrivateKey"><code>pkcs8::FromPrivateKey</code></a>: decode private keys from PKCS#8</li>
+<li><a href="../pkcs8/traits/trait.FromPublicKey.html" title="pkcs8::FromPublicKey"><code>pkcs8::FromPublicKey</code></a>: decode public keys from PKCS#8</li>
+<li><a href="../pkcs8/traits/trait.ToPrivateKey.html" title="pkcs8::ToPrivateKey"><code>pkcs8::ToPrivateKey</code></a>: encode private keys to PKCS#8</li>
+<li><a href="../pkcs8/traits/trait.ToPublicKey.html" title="pkcs8::ToPublicKey"><code>pkcs8::ToPublicKey</code></a>: encode public keys to PKCS#8</li>
+</ul>
+<h4 id="example-1"><a href="#example-1">Example</a></h4>
+<div class="example-wrap"><pre class="rust rust-example-rendered"><code><span class="kw">use</span> <span class="ident">rsa</span>::{<span class="ident">RsaPublicKey</span>, <span class="ident">pkcs8::FromPublicKey</span>};
+
+<span class="kw">let</span> <span class="ident">pem</span> <span class="op">=</span> <span class="string">&quot;-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtsQsUV8QpqrygsY+2+JC
+Q6Fw8/omM71IM2N/R8pPbzbgOl0p78MZGsgPOQ2HSznjD0FPzsH8oO2B5Uftws04
+LHb2HJAYlz25+lN5cqfHAfa3fgmC38FfwBkn7l582UtPWZ/wcBOnyCgb3yLcvJrX
+yrt8QxHJgvWO23ITrUVYszImbXQ67YGS0YhMrbixRzmo2tpm3JcIBtnHrEUMsT0N
+fFdfsZhTT8YbxBvA8FdODgEwx7u/vf3J9qbi4+Kv8cvqyJuleIRSjVXPsIMnoejI
+n04APPKIjpMyQdnWlby7rNyQtE4+CV+jcFjqJbE/Xilcvqxt6DirjFCvYeKYl1uH
+LwIDAQAB
+-----END PUBLIC KEY-----&quot;</span>;
+
+<span class="kw">let</span> <span class="ident">public_key</span> <span class="op">=</span> <span class="ident">RsaPublicKey::from_public_key_pem</span>(<span class="ident">pem</span>)<span class="question-mark">?</span>;</code></pre></div>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../pkcs1/index.html" title="mod pkcs1">pkcs1</a>;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../pkcs8/index.html" title="mod pkcs8">pkcs8</a>;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use self::hash::<a class="enum" href="hash/enum.Hash.html" title="enum rsa::hash::Hash">Hash</a>;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use self::padding::<a class="enum" href="padding/enum.PaddingScheme.html" title="enum rsa::padding::PaddingScheme">PaddingScheme</a>;</code></div><div class="item-right docblock-short"></div></div></div><h2 id="modules" class="small-section-header"><a href="#modules">Modules</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="mod" href="algorithms/index.html" title="rsa::algorithms mod">algorithms</a></div><div class="item-right docblock-short"><p>Useful algorithms.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="errors/index.html" title="rsa::errors mod">errors</a></div><div class="item-right docblock-short"><p>Error types.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="hash/index.html" title="rsa::hash mod">hash</a></div><div class="item-right docblock-short"><p>Supported hash functions.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="mod" href="padding/index.html" title="rsa::padding mod">padding</a></div><div class="item-right docblock-short"><p>Supported padding schemes.</p>
+</div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.BigUint.html" title="rsa::BigUint struct">BigUint</a></div><div class="item-right docblock-short"><p>A big unsigned integer type.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.RsaPrivateKey.html" title="rsa::RsaPrivateKey struct">RsaPrivateKey</a></div><div class="item-right docblock-short"><p>Represents a whole RSA key, public and private parts.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.RsaPublicKey.html" title="rsa::RsaPublicKey struct">RsaPublicKey</a></div><div class="item-right docblock-short"><p>Represents the public part of an RSA key.</p>
+</div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.PublicKey.html" title="rsa::PublicKey trait">PublicKey</a></div><div class="item-right docblock-short"><p>Generic trait for operations on a public key.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.PublicKeyParts.html" title="rsa::PublicKeyParts trait">PublicKeyParts</a></div><div class="item-right docblock-short"></div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="rsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

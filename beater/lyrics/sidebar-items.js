@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["LyricsKind",""]],"struct":[["InnerLyrics",""],["LyricWord",""],["Lyrics",""],["LyricsLine",""]]});

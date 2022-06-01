@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["DeviceType",""]],"fn":[["file_descriptor_proto",""]],"struct":[["DeviceAlias","Generated files are compatible only with the same version of protobuf runtime."]]});

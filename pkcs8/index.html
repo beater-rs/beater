@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Pure Rust implementation of Public-Key Cryptography Standards (PKCS) #8: Private-Key Information Syntax Specification (RFC 5208), with additional support for PKCS#8v2 asymmetric key packages (RFC 5958)"><meta name="keywords" content="rust, rustlang, rust-lang, pkcs8"><title>pkcs8 - Rust</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../normalize.css"><link rel="stylesheet" type="text/css" href="../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../dark.css" disabled><link rel="stylesheet" type="text/css" href="../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../storage.js"></script><script src="../crates.js"></script><script defer src="../main.js"></script>
+    <noscript><link rel="stylesheet" href="../noscript.css"></noscript><link rel="icon" href="https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg"></head><body class="rustdoc mod crate"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../pkcs8/index.html"><div class="logo-container"><img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../pkcs8/index.html"><div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg" alt="logo"></div>
+        </a><h2 class="location"><a href="#">Crate pkcs8</a></h2><div class="sidebar-elems"><div class="block"><ul><li class="version">Version 0.7.6</li><li><a id="all-types" href="all.html">All Items</a></li></div></ul><section><div class="block"><ul><li><a href="#structs">Structs</a></li><li><a href="#enums">Enums</a></li><li><a href="#traits">Traits</a></li><li><a href="#types">Type Definitions</a></li></ul></div></section><div id="sidebar-vars" data-name="pkcs8" data-ty="mod" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../pkcs8/index.html">
+                        <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo.svg" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="main-heading">
+    <h1 class="fqn"><span class="in-band">Crate <a class="mod" href="#">pkcs8</a><button id="copy-path" onclick="copy_path(this)" title="Copy item path to clipboard"><img src="../clipboard.svg" width="19" height="18" alt="Copy item path"></button></span></h1><span class="out-of-band"><a class="srclink" href="../src/pkcs8/lib.rs.html#1-170">source</a> · <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span></div><details class="rustdoc-toggle top-doc" open><summary class="hideme"><span>Expand description</span></summary><div class="docblock"><p>Pure Rust implementation of Public-Key Cryptography Standards (PKCS) #8:
+Private-Key Information Syntax Specification (<a href="https://tools.ietf.org/html/rfc5208">RFC 5208</a>), with additional
+support for PKCS#8v2 asymmetric key packages (<a href="https://tools.ietf.org/html/rfc5958">RFC 5958</a>)</p>
+<h2 id="about-pkcs8"><a href="#about-pkcs8">About PKCS#8</a></h2>
+<p>PKCS#8 is a format for cryptographic private keys, often containing pairs
+of private and public keys.</p>
+<p>You can identify a PKCS#8 private key encoded as PEM (i.e. text) by the
+following:</p>
+<div class="example-wrap"><pre class="language-text"><code>-----BEGIN PRIVATE KEY-----</code></pre></div>
+<p>PKCS#8 private keys can optionally be encrypted under a password using
+key derivation algorithms like PBKDF2 and <a href="https://en.wikipedia.org/wiki/Scrypt">scrypt</a>, and encrypted with
+ciphers like AES-CBC. When a PKCS#8 private key has been encrypted,
+it starts with the following:</p>
+<div class="example-wrap"><pre class="language-text"><code>-----BEGIN ENCRYPTED PRIVATE KEY-----</code></pre></div>
+<p>PKCS#8 private keys can also be serialized in an ASN.1-based binary format.
+The PEM text encoding is a Base64 representation of this format.</p>
+<h2 id="about-this-crate"><a href="#about-this-crate">About this crate</a></h2>
+<p>This library provides generalized PKCS#8 support designed to work with a
+number of different algorithms. It supports <code>no_std</code> platforms including
+ones without a heap (albeit with reduced functionality).</p>
+<p>It supports decoding/encoding the following types:</p>
+<ul>
+<li>[<code>EncryptedPrivateKeyInfo</code>]: (with <code>pkcs5</code> feature) encrypted key.</li>
+<li><a href="struct.PrivateKeyInfo.html" title="PrivateKeyInfo"><code>PrivateKeyInfo</code></a>: algorithm identifier and data representing a private key.
+Optionally also includes public key data for asymmetric keys.</li>
+<li><a href="struct.SubjectPublicKeyInfo.html" title="SubjectPublicKeyInfo"><code>SubjectPublicKeyInfo</code></a>: algorithm identifier and data representing a public key
+(re-exported from the <a href="../spki/index.html" title="spki"><code>spki</code></a> crate)</li>
+</ul>
+<p>When the <code>alloc</code> feature is enabled, the following additional types are
+available which provide more convenient decoding/encoding support:</p>
+<ul>
+<li>[<code>EncryptedPrivateKeyDocument</code>]: (with <code>pkcs5</code> feature) heap-backed encrypted key.</li>
+<li><a href="struct.PrivateKeyDocument.html" title="PrivateKeyDocument"><code>PrivateKeyDocument</code></a>: heap-backed storage for serialized <a href="struct.PrivateKeyInfo.html" title="PrivateKeyInfo"><code>PrivateKeyInfo</code></a>.</li>
+<li><a href="struct.PublicKeyDocument.html" title="PublicKeyDocument"><code>PublicKeyDocument</code></a>: heap-backed storage for serialized <a href="struct.SubjectPublicKeyInfo.html" title="SubjectPublicKeyInfo"><code>SubjectPublicKeyInfo</code></a>.</li>
+</ul>
+<p>When the <code>pem</code> feature is enabled, it also supports decoding/encoding
+documents from “PEM encoding” format as defined in RFC 7468.</p>
+<h2 id="supported-algorithms"><a href="#supported-algorithms">Supported Algorithms</a></h2>
+<p>This crate has been written generically so it can be used to implement
+PKCS#8 support for any algorithm.</p>
+<p>However, it’s only tested against keys generated by OpenSSL for the
+following algorithms:</p>
+<ul>
+<li>ECC (<code>id-ecPublicKey</code>)</li>
+<li>Ed25519 (<code>Ed25519</code>)</li>
+<li>RSA (<code>rsaEncryption</code>)</li>
+</ul>
+<p>Please open an issue if you encounter trouble using it with other
+algorithms.</p>
+<h2 id="encrypted-private-key-support"><a href="#encrypted-private-key-support">Encrypted Private Key Support</a></h2>
+<p>[<code>EncryptedPrivateKeyInfo</code>] supports decoding/encoding encrypted PKCS#8
+private keys and is gated under the <code>pkcs5</code> feature. The corresponding
+[<code>EncryptedPrivateKeyDocument</code>] type provides heap-backed storage
+(<code>alloc</code> feature required).</p>
+<p>When the <code>encryption</code> feature of this crate is enabled, it provides
+[<code>EncryptedPrivateKeyInfo::decrypt</code>] and [<code>PrivateKeyInfo::encrypt</code>]
+functions which are able to decrypt/encrypt keys using the following
+algorithms:</p>
+<ul>
+<li><a href="https://tools.ietf.org/html/rfc8018#section-6.2">PKCS#5v2 Password Based Encryption Scheme 2 (RFC 8018)</a>
+<ul>
+<li>Key derivation functions:
+<ul>
+<li><a href="https://en.wikipedia.org/wiki/Scrypt">scrypt</a> (<a href="https://datatracker.ietf.org/doc/html/rfc7914">RFC 7914</a>)</li>
+<li>PBKDF2 (<a href="https://datatracker.ietf.org/doc/html/rfc8018#section-5.2">RFC 8018</a>)
+<ul>
+<li>SHA-2 based PRF with HMAC-SHA224, HMAC-SHA256, HMAC-SHA384, or HMAC-SHA512</li>
+<li>SHA-1 based PRF with HMAC-SHA1, when the <code>sha1</code> feature of this crate is enabled.</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Symmetric encryption: AES-128-CBC, AES-192-CBC, or AES-256-CBC
+(best available options for PKCS#5v2)</li>
+</ul>
+</li>
+</ul>
+<h3 id="legacy-des-cbc-and-des-ede3-cbc-3des-support-optional"><a href="#legacy-des-cbc-and-des-ede3-cbc-3des-support-optional">Legacy DES-CBC and DES-EDE3-CBC (3DES) support (optional)</a></h3>
+<p>When the <code>des-insecure</code> and/or <code>3des</code> features are enabled this crate provides support for
+private keys encrypted with with DES-CBC and DES-EDE3-CBC (3DES or Triple DES) symmetric
+encryption, respectively.</p>
+<p>⚠️ WARNING ⚠️</p>
+<p>DES support is implemented to allow for decryption of legacy files.</p>
+<p>DES is considered insecure due to its short key size. New keys should use AES instead.</p>
+<h2 id="pkcs1-support-optional"><a href="#pkcs1-support-optional">PKCS#1 support (optional)</a></h2>
+<p>When the <code>pkcs1</code> feature of this crate is enabled, this crate provides
+a blanket impl of PKCS#8 support for types which impl the traits from the
+<a href="../pkcs1/index.html" title="pkcs1"><code>pkcs1</code></a> crate (e.g. <code>FromRsaPrivateKey</code>, <code>ToRsaPrivateKey</code>).</p>
+<h2 id="minimum-supported-rust-version"><a href="#minimum-supported-rust-version">Minimum Supported Rust Version</a></h2>
+<p>This crate requires <strong>Rust 1.51</strong> at a minimum.</p>
+</div></details><h2 id="reexports" class="small-section-header"><a href="#reexports">Re-exports</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../der/index.html" title="mod der">der</a>;</code></div><div class="item-right docblock-short"></div></div><div class="item-row"><div class="item-left import-item"><code>pub use <a class="mod" href="../pkcs1/index.html" title="mod pkcs1">pkcs1</a>;</code></div><div class="item-right docblock-short"></div></div></div><h2 id="structs" class="small-section-header"><a href="#structs">Structs</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.AlgorithmIdentifier.html" title="pkcs8::AlgorithmIdentifier struct">AlgorithmIdentifier</a></div><div class="item-right docblock-short"><p>X.509 <code>AlgorithmIdentifier</code> as defined in <a href="https://tools.ietf.org/html/rfc5280#section-4.1.1.2">RFC 5280 Section 4.1.1.2</a>.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.Attributes.html" title="pkcs8::Attributes struct">Attributes</a></div><div class="item-right docblock-short"><p>Attributes as defined in <a href="https://datatracker.ietf.org/doc/html/rfc5958">RFC 5958 Section 2</a>.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.ObjectIdentifier.html" title="pkcs8::ObjectIdentifier struct">ObjectIdentifier</a></div><div class="item-right docblock-short"><p>Object identifier (OID).</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.PrivateKeyDocument.html" title="pkcs8::PrivateKeyDocument struct">PrivateKeyDocument</a></div><div class="item-right docblock-short"><p>PKCS#8 private key document.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.PrivateKeyInfo.html" title="pkcs8::PrivateKeyInfo struct">PrivateKeyInfo</a></div><div class="item-right docblock-short"><p>PKCS#8 <code>PrivateKeyInfo</code>.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.PublicKeyDocument.html" title="pkcs8::PublicKeyDocument struct">PublicKeyDocument</a></div><div class="item-right docblock-short"><p>SPKI public key document.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="struct" href="struct.SubjectPublicKeyInfo.html" title="pkcs8::SubjectPublicKeyInfo struct">SubjectPublicKeyInfo</a></div><div class="item-right docblock-short"><p>X.509 <code>SubjectPublicKeyInfo</code> (SPKI) as defined in <a href="https://tools.ietf.org/html/rfc5280#section-4.1.2.7">RFC 5280 Section 4.1.2.7</a>.</p>
+</div></div></div><h2 id="enums" class="small-section-header"><a href="#enums">Enums</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.Error.html" title="pkcs8::Error enum">Error</a></div><div class="item-right docblock-short"><p>Error type</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="enum" href="enum.Version.html" title="pkcs8::Version enum">Version</a></div><div class="item-right docblock-short"><p>Version identifier for PKCS#8 documents.</p>
+</div></div></div><h2 id="traits" class="small-section-header"><a href="#traits">Traits</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.FromPrivateKey.html" title="pkcs8::FromPrivateKey trait">FromPrivateKey</a></div><div class="item-right docblock-short"><p>Parse a private key object from a PKCS#8 encoded document.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.FromPublicKey.html" title="pkcs8::FromPublicKey trait">FromPublicKey</a></div><div class="item-right docblock-short"><p>Parse a public key object from an encoded SPKI document.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.ToPrivateKey.html" title="pkcs8::ToPrivateKey trait">ToPrivateKey</a></div><div class="item-right docblock-short"><p>Serialize a private key object to a PKCS#8 encoded document.</p>
+</div></div><div class="item-row"><div class="item-left module-item"><a class="trait" href="trait.ToPublicKey.html" title="pkcs8::ToPublicKey trait">ToPublicKey</a></div><div class="item-right docblock-short"><p>Serialize a public key object to a SPKI-encoded document.</p>
+</div></div></div><h2 id="types" class="small-section-header"><a href="#types">Type Definitions</a></h2>
+<div class="item-table"><div class="item-row"><div class="item-left module-item"><a class="type" href="type.Result.html" title="pkcs8::Result type">Result</a></div><div class="item-right docblock-short"><p>Result type</p>
+</div></div></div></section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../" data-current-crate="pkcs8" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

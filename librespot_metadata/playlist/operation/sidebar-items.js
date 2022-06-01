@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["PlaylistOperationKind",""]],"struct":[["PlaylistOperation",""],["PlaylistOperationAdd",""],["PlaylistOperationMove",""],["PlaylistOperationRemove",""],["PlaylistOperations",""]]});

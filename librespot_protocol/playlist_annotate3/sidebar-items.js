@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["AbuseReportState",""],["RenderFeatures",""]],"fn":[["file_descriptor_proto",""]],"struct":[["AnnotateRequest",""],["PlaylistAnnotation",""],["TakedownRequest","Generated files are compatible only with the same version of protobuf runtime."],["TranscodedPicture",""]]});

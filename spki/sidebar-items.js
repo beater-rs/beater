@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["AlgorithmIdentifier","X.509 `AlgorithmIdentifier` as defined in RFC 5280 Section 4.1.1.2."],["ObjectIdentifier","Object identifier (OID)."],["SubjectPublicKeyInfo","X.509 `SubjectPublicKeyInfo` (SPKI) as defined in RFC 5280 Section 4.1.2.7."]]});

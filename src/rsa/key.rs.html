@@ -1,0 +1,1890 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Source of the Rust file `/home/runner/.cargo/registry/src/github.com-1ecc6299db9ec823/rsa-0.5.0/src/key.rs`."><meta name="keywords" content="rust, rustlang, rust-lang"><title>key.rs - source</title><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Regular.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../FiraSans-Medium.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Regular.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceSerif4-Bold.ttf.woff2"><link rel="preload" as="font" type="font/woff2" crossorigin href="../../SourceCodePro-Semibold.ttf.woff2"><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled><link rel="stylesheet" type="text/css" href="../../dark.css" disabled><link rel="stylesheet" type="text/css" href="../../light.css" id="themeStyle"><script id="default-settings" ></script><script src="../../storage.js"></script><script src="../../crates.js"></script><script defer src="../../main.js"></script><script defer src="../../source-script.js"></script><script defer src="../../source-files.js"></script>
+    <noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="alternate icon" type="image/png" href="../../favicon-16x16.png"><link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><link rel="icon" type="image/svg+xml" href="../../favicon.svg"></head><body class="rustdoc source"><!--[if lte IE 11]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="mobile-topbar"><button class="sidebar-menu-toggle">&#9776;</button><a class="sidebar-logo" href="../../rsa/index.html"><div class="logo-container"><img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></div>
+        </a><h2 class="location"></h2>
+    </nav>
+    <nav class="sidebar"><a class="sidebar-logo" href="../../rsa/index.html"><div class="logo-container">
+                    <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></div>
+        </a></nav><main><div class="width-limiter"><div class="sub-container"><a class="sub-logo-container" href="../../rsa/index.html">
+                        <img src="https://raw.githubusercontent.com/RustCrypto/meta/master/logo_small.png" alt="logo"></a><nav class="sub"><div class="theme-picker hidden"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu" title="themes"><img width="22" height="22" alt="Pick another theme!" src="../../brush.svg"></button><div id="theme-choices" role="menu"></div></div><form class="search-form"><div class="search-container"><span></span><input class="search-input" name="search" autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"><button type="button" id="help-button" title="help">?</button><a id="settings-menu" href="../../settings.html" title="settings"><img width="22" height="22" alt="Change settings" src="../../wheel.svg"></a></div></form></nav></div><section id="main-content" class="content"><div class="example-wrap"><pre class="line-numbers"><span id="1">1</span>
+<span id="2">2</span>
+<span id="3">3</span>
+<span id="4">4</span>
+<span id="5">5</span>
+<span id="6">6</span>
+<span id="7">7</span>
+<span id="8">8</span>
+<span id="9">9</span>
+<span id="10">10</span>
+<span id="11">11</span>
+<span id="12">12</span>
+<span id="13">13</span>
+<span id="14">14</span>
+<span id="15">15</span>
+<span id="16">16</span>
+<span id="17">17</span>
+<span id="18">18</span>
+<span id="19">19</span>
+<span id="20">20</span>
+<span id="21">21</span>
+<span id="22">22</span>
+<span id="23">23</span>
+<span id="24">24</span>
+<span id="25">25</span>
+<span id="26">26</span>
+<span id="27">27</span>
+<span id="28">28</span>
+<span id="29">29</span>
+<span id="30">30</span>
+<span id="31">31</span>
+<span id="32">32</span>
+<span id="33">33</span>
+<span id="34">34</span>
+<span id="35">35</span>
+<span id="36">36</span>
+<span id="37">37</span>
+<span id="38">38</span>
+<span id="39">39</span>
+<span id="40">40</span>
+<span id="41">41</span>
+<span id="42">42</span>
+<span id="43">43</span>
+<span id="44">44</span>
+<span id="45">45</span>
+<span id="46">46</span>
+<span id="47">47</span>
+<span id="48">48</span>
+<span id="49">49</span>
+<span id="50">50</span>
+<span id="51">51</span>
+<span id="52">52</span>
+<span id="53">53</span>
+<span id="54">54</span>
+<span id="55">55</span>
+<span id="56">56</span>
+<span id="57">57</span>
+<span id="58">58</span>
+<span id="59">59</span>
+<span id="60">60</span>
+<span id="61">61</span>
+<span id="62">62</span>
+<span id="63">63</span>
+<span id="64">64</span>
+<span id="65">65</span>
+<span id="66">66</span>
+<span id="67">67</span>
+<span id="68">68</span>
+<span id="69">69</span>
+<span id="70">70</span>
+<span id="71">71</span>
+<span id="72">72</span>
+<span id="73">73</span>
+<span id="74">74</span>
+<span id="75">75</span>
+<span id="76">76</span>
+<span id="77">77</span>
+<span id="78">78</span>
+<span id="79">79</span>
+<span id="80">80</span>
+<span id="81">81</span>
+<span id="82">82</span>
+<span id="83">83</span>
+<span id="84">84</span>
+<span id="85">85</span>
+<span id="86">86</span>
+<span id="87">87</span>
+<span id="88">88</span>
+<span id="89">89</span>
+<span id="90">90</span>
+<span id="91">91</span>
+<span id="92">92</span>
+<span id="93">93</span>
+<span id="94">94</span>
+<span id="95">95</span>
+<span id="96">96</span>
+<span id="97">97</span>
+<span id="98">98</span>
+<span id="99">99</span>
+<span id="100">100</span>
+<span id="101">101</span>
+<span id="102">102</span>
+<span id="103">103</span>
+<span id="104">104</span>
+<span id="105">105</span>
+<span id="106">106</span>
+<span id="107">107</span>
+<span id="108">108</span>
+<span id="109">109</span>
+<span id="110">110</span>
+<span id="111">111</span>
+<span id="112">112</span>
+<span id="113">113</span>
+<span id="114">114</span>
+<span id="115">115</span>
+<span id="116">116</span>
+<span id="117">117</span>
+<span id="118">118</span>
+<span id="119">119</span>
+<span id="120">120</span>
+<span id="121">121</span>
+<span id="122">122</span>
+<span id="123">123</span>
+<span id="124">124</span>
+<span id="125">125</span>
+<span id="126">126</span>
+<span id="127">127</span>
+<span id="128">128</span>
+<span id="129">129</span>
+<span id="130">130</span>
+<span id="131">131</span>
+<span id="132">132</span>
+<span id="133">133</span>
+<span id="134">134</span>
+<span id="135">135</span>
+<span id="136">136</span>
+<span id="137">137</span>
+<span id="138">138</span>
+<span id="139">139</span>
+<span id="140">140</span>
+<span id="141">141</span>
+<span id="142">142</span>
+<span id="143">143</span>
+<span id="144">144</span>
+<span id="145">145</span>
+<span id="146">146</span>
+<span id="147">147</span>
+<span id="148">148</span>
+<span id="149">149</span>
+<span id="150">150</span>
+<span id="151">151</span>
+<span id="152">152</span>
+<span id="153">153</span>
+<span id="154">154</span>
+<span id="155">155</span>
+<span id="156">156</span>
+<span id="157">157</span>
+<span id="158">158</span>
+<span id="159">159</span>
+<span id="160">160</span>
+<span id="161">161</span>
+<span id="162">162</span>
+<span id="163">163</span>
+<span id="164">164</span>
+<span id="165">165</span>
+<span id="166">166</span>
+<span id="167">167</span>
+<span id="168">168</span>
+<span id="169">169</span>
+<span id="170">170</span>
+<span id="171">171</span>
+<span id="172">172</span>
+<span id="173">173</span>
+<span id="174">174</span>
+<span id="175">175</span>
+<span id="176">176</span>
+<span id="177">177</span>
+<span id="178">178</span>
+<span id="179">179</span>
+<span id="180">180</span>
+<span id="181">181</span>
+<span id="182">182</span>
+<span id="183">183</span>
+<span id="184">184</span>
+<span id="185">185</span>
+<span id="186">186</span>
+<span id="187">187</span>
+<span id="188">188</span>
+<span id="189">189</span>
+<span id="190">190</span>
+<span id="191">191</span>
+<span id="192">192</span>
+<span id="193">193</span>
+<span id="194">194</span>
+<span id="195">195</span>
+<span id="196">196</span>
+<span id="197">197</span>
+<span id="198">198</span>
+<span id="199">199</span>
+<span id="200">200</span>
+<span id="201">201</span>
+<span id="202">202</span>
+<span id="203">203</span>
+<span id="204">204</span>
+<span id="205">205</span>
+<span id="206">206</span>
+<span id="207">207</span>
+<span id="208">208</span>
+<span id="209">209</span>
+<span id="210">210</span>
+<span id="211">211</span>
+<span id="212">212</span>
+<span id="213">213</span>
+<span id="214">214</span>
+<span id="215">215</span>
+<span id="216">216</span>
+<span id="217">217</span>
+<span id="218">218</span>
+<span id="219">219</span>
+<span id="220">220</span>
+<span id="221">221</span>
+<span id="222">222</span>
+<span id="223">223</span>
+<span id="224">224</span>
+<span id="225">225</span>
+<span id="226">226</span>
+<span id="227">227</span>
+<span id="228">228</span>
+<span id="229">229</span>
+<span id="230">230</span>
+<span id="231">231</span>
+<span id="232">232</span>
+<span id="233">233</span>
+<span id="234">234</span>
+<span id="235">235</span>
+<span id="236">236</span>
+<span id="237">237</span>
+<span id="238">238</span>
+<span id="239">239</span>
+<span id="240">240</span>
+<span id="241">241</span>
+<span id="242">242</span>
+<span id="243">243</span>
+<span id="244">244</span>
+<span id="245">245</span>
+<span id="246">246</span>
+<span id="247">247</span>
+<span id="248">248</span>
+<span id="249">249</span>
+<span id="250">250</span>
+<span id="251">251</span>
+<span id="252">252</span>
+<span id="253">253</span>
+<span id="254">254</span>
+<span id="255">255</span>
+<span id="256">256</span>
+<span id="257">257</span>
+<span id="258">258</span>
+<span id="259">259</span>
+<span id="260">260</span>
+<span id="261">261</span>
+<span id="262">262</span>
+<span id="263">263</span>
+<span id="264">264</span>
+<span id="265">265</span>
+<span id="266">266</span>
+<span id="267">267</span>
+<span id="268">268</span>
+<span id="269">269</span>
+<span id="270">270</span>
+<span id="271">271</span>
+<span id="272">272</span>
+<span id="273">273</span>
+<span id="274">274</span>
+<span id="275">275</span>
+<span id="276">276</span>
+<span id="277">277</span>
+<span id="278">278</span>
+<span id="279">279</span>
+<span id="280">280</span>
+<span id="281">281</span>
+<span id="282">282</span>
+<span id="283">283</span>
+<span id="284">284</span>
+<span id="285">285</span>
+<span id="286">286</span>
+<span id="287">287</span>
+<span id="288">288</span>
+<span id="289">289</span>
+<span id="290">290</span>
+<span id="291">291</span>
+<span id="292">292</span>
+<span id="293">293</span>
+<span id="294">294</span>
+<span id="295">295</span>
+<span id="296">296</span>
+<span id="297">297</span>
+<span id="298">298</span>
+<span id="299">299</span>
+<span id="300">300</span>
+<span id="301">301</span>
+<span id="302">302</span>
+<span id="303">303</span>
+<span id="304">304</span>
+<span id="305">305</span>
+<span id="306">306</span>
+<span id="307">307</span>
+<span id="308">308</span>
+<span id="309">309</span>
+<span id="310">310</span>
+<span id="311">311</span>
+<span id="312">312</span>
+<span id="313">313</span>
+<span id="314">314</span>
+<span id="315">315</span>
+<span id="316">316</span>
+<span id="317">317</span>
+<span id="318">318</span>
+<span id="319">319</span>
+<span id="320">320</span>
+<span id="321">321</span>
+<span id="322">322</span>
+<span id="323">323</span>
+<span id="324">324</span>
+<span id="325">325</span>
+<span id="326">326</span>
+<span id="327">327</span>
+<span id="328">328</span>
+<span id="329">329</span>
+<span id="330">330</span>
+<span id="331">331</span>
+<span id="332">332</span>
+<span id="333">333</span>
+<span id="334">334</span>
+<span id="335">335</span>
+<span id="336">336</span>
+<span id="337">337</span>
+<span id="338">338</span>
+<span id="339">339</span>
+<span id="340">340</span>
+<span id="341">341</span>
+<span id="342">342</span>
+<span id="343">343</span>
+<span id="344">344</span>
+<span id="345">345</span>
+<span id="346">346</span>
+<span id="347">347</span>
+<span id="348">348</span>
+<span id="349">349</span>
+<span id="350">350</span>
+<span id="351">351</span>
+<span id="352">352</span>
+<span id="353">353</span>
+<span id="354">354</span>
+<span id="355">355</span>
+<span id="356">356</span>
+<span id="357">357</span>
+<span id="358">358</span>
+<span id="359">359</span>
+<span id="360">360</span>
+<span id="361">361</span>
+<span id="362">362</span>
+<span id="363">363</span>
+<span id="364">364</span>
+<span id="365">365</span>
+<span id="366">366</span>
+<span id="367">367</span>
+<span id="368">368</span>
+<span id="369">369</span>
+<span id="370">370</span>
+<span id="371">371</span>
+<span id="372">372</span>
+<span id="373">373</span>
+<span id="374">374</span>
+<span id="375">375</span>
+<span id="376">376</span>
+<span id="377">377</span>
+<span id="378">378</span>
+<span id="379">379</span>
+<span id="380">380</span>
+<span id="381">381</span>
+<span id="382">382</span>
+<span id="383">383</span>
+<span id="384">384</span>
+<span id="385">385</span>
+<span id="386">386</span>
+<span id="387">387</span>
+<span id="388">388</span>
+<span id="389">389</span>
+<span id="390">390</span>
+<span id="391">391</span>
+<span id="392">392</span>
+<span id="393">393</span>
+<span id="394">394</span>
+<span id="395">395</span>
+<span id="396">396</span>
+<span id="397">397</span>
+<span id="398">398</span>
+<span id="399">399</span>
+<span id="400">400</span>
+<span id="401">401</span>
+<span id="402">402</span>
+<span id="403">403</span>
+<span id="404">404</span>
+<span id="405">405</span>
+<span id="406">406</span>
+<span id="407">407</span>
+<span id="408">408</span>
+<span id="409">409</span>
+<span id="410">410</span>
+<span id="411">411</span>
+<span id="412">412</span>
+<span id="413">413</span>
+<span id="414">414</span>
+<span id="415">415</span>
+<span id="416">416</span>
+<span id="417">417</span>
+<span id="418">418</span>
+<span id="419">419</span>
+<span id="420">420</span>
+<span id="421">421</span>
+<span id="422">422</span>
+<span id="423">423</span>
+<span id="424">424</span>
+<span id="425">425</span>
+<span id="426">426</span>
+<span id="427">427</span>
+<span id="428">428</span>
+<span id="429">429</span>
+<span id="430">430</span>
+<span id="431">431</span>
+<span id="432">432</span>
+<span id="433">433</span>
+<span id="434">434</span>
+<span id="435">435</span>
+<span id="436">436</span>
+<span id="437">437</span>
+<span id="438">438</span>
+<span id="439">439</span>
+<span id="440">440</span>
+<span id="441">441</span>
+<span id="442">442</span>
+<span id="443">443</span>
+<span id="444">444</span>
+<span id="445">445</span>
+<span id="446">446</span>
+<span id="447">447</span>
+<span id="448">448</span>
+<span id="449">449</span>
+<span id="450">450</span>
+<span id="451">451</span>
+<span id="452">452</span>
+<span id="453">453</span>
+<span id="454">454</span>
+<span id="455">455</span>
+<span id="456">456</span>
+<span id="457">457</span>
+<span id="458">458</span>
+<span id="459">459</span>
+<span id="460">460</span>
+<span id="461">461</span>
+<span id="462">462</span>
+<span id="463">463</span>
+<span id="464">464</span>
+<span id="465">465</span>
+<span id="466">466</span>
+<span id="467">467</span>
+<span id="468">468</span>
+<span id="469">469</span>
+<span id="470">470</span>
+<span id="471">471</span>
+<span id="472">472</span>
+<span id="473">473</span>
+<span id="474">474</span>
+<span id="475">475</span>
+<span id="476">476</span>
+<span id="477">477</span>
+<span id="478">478</span>
+<span id="479">479</span>
+<span id="480">480</span>
+<span id="481">481</span>
+<span id="482">482</span>
+<span id="483">483</span>
+<span id="484">484</span>
+<span id="485">485</span>
+<span id="486">486</span>
+<span id="487">487</span>
+<span id="488">488</span>
+<span id="489">489</span>
+<span id="490">490</span>
+<span id="491">491</span>
+<span id="492">492</span>
+<span id="493">493</span>
+<span id="494">494</span>
+<span id="495">495</span>
+<span id="496">496</span>
+<span id="497">497</span>
+<span id="498">498</span>
+<span id="499">499</span>
+<span id="500">500</span>
+<span id="501">501</span>
+<span id="502">502</span>
+<span id="503">503</span>
+<span id="504">504</span>
+<span id="505">505</span>
+<span id="506">506</span>
+<span id="507">507</span>
+<span id="508">508</span>
+<span id="509">509</span>
+<span id="510">510</span>
+<span id="511">511</span>
+<span id="512">512</span>
+<span id="513">513</span>
+<span id="514">514</span>
+<span id="515">515</span>
+<span id="516">516</span>
+<span id="517">517</span>
+<span id="518">518</span>
+<span id="519">519</span>
+<span id="520">520</span>
+<span id="521">521</span>
+<span id="522">522</span>
+<span id="523">523</span>
+<span id="524">524</span>
+<span id="525">525</span>
+<span id="526">526</span>
+<span id="527">527</span>
+<span id="528">528</span>
+<span id="529">529</span>
+<span id="530">530</span>
+<span id="531">531</span>
+<span id="532">532</span>
+<span id="533">533</span>
+<span id="534">534</span>
+<span id="535">535</span>
+<span id="536">536</span>
+<span id="537">537</span>
+<span id="538">538</span>
+<span id="539">539</span>
+<span id="540">540</span>
+<span id="541">541</span>
+<span id="542">542</span>
+<span id="543">543</span>
+<span id="544">544</span>
+<span id="545">545</span>
+<span id="546">546</span>
+<span id="547">547</span>
+<span id="548">548</span>
+<span id="549">549</span>
+<span id="550">550</span>
+<span id="551">551</span>
+<span id="552">552</span>
+<span id="553">553</span>
+<span id="554">554</span>
+<span id="555">555</span>
+<span id="556">556</span>
+<span id="557">557</span>
+<span id="558">558</span>
+<span id="559">559</span>
+<span id="560">560</span>
+<span id="561">561</span>
+<span id="562">562</span>
+<span id="563">563</span>
+<span id="564">564</span>
+<span id="565">565</span>
+<span id="566">566</span>
+<span id="567">567</span>
+<span id="568">568</span>
+<span id="569">569</span>
+<span id="570">570</span>
+<span id="571">571</span>
+<span id="572">572</span>
+<span id="573">573</span>
+<span id="574">574</span>
+<span id="575">575</span>
+<span id="576">576</span>
+<span id="577">577</span>
+<span id="578">578</span>
+<span id="579">579</span>
+<span id="580">580</span>
+<span id="581">581</span>
+<span id="582">582</span>
+<span id="583">583</span>
+<span id="584">584</span>
+<span id="585">585</span>
+<span id="586">586</span>
+<span id="587">587</span>
+<span id="588">588</span>
+<span id="589">589</span>
+<span id="590">590</span>
+<span id="591">591</span>
+<span id="592">592</span>
+<span id="593">593</span>
+<span id="594">594</span>
+<span id="595">595</span>
+<span id="596">596</span>
+<span id="597">597</span>
+<span id="598">598</span>
+<span id="599">599</span>
+<span id="600">600</span>
+<span id="601">601</span>
+<span id="602">602</span>
+<span id="603">603</span>
+<span id="604">604</span>
+<span id="605">605</span>
+<span id="606">606</span>
+<span id="607">607</span>
+<span id="608">608</span>
+<span id="609">609</span>
+<span id="610">610</span>
+<span id="611">611</span>
+<span id="612">612</span>
+<span id="613">613</span>
+<span id="614">614</span>
+<span id="615">615</span>
+<span id="616">616</span>
+<span id="617">617</span>
+<span id="618">618</span>
+<span id="619">619</span>
+<span id="620">620</span>
+<span id="621">621</span>
+<span id="622">622</span>
+<span id="623">623</span>
+<span id="624">624</span>
+<span id="625">625</span>
+<span id="626">626</span>
+<span id="627">627</span>
+<span id="628">628</span>
+<span id="629">629</span>
+<span id="630">630</span>
+<span id="631">631</span>
+<span id="632">632</span>
+<span id="633">633</span>
+<span id="634">634</span>
+<span id="635">635</span>
+<span id="636">636</span>
+<span id="637">637</span>
+<span id="638">638</span>
+<span id="639">639</span>
+<span id="640">640</span>
+<span id="641">641</span>
+<span id="642">642</span>
+<span id="643">643</span>
+<span id="644">644</span>
+<span id="645">645</span>
+<span id="646">646</span>
+<span id="647">647</span>
+<span id="648">648</span>
+<span id="649">649</span>
+<span id="650">650</span>
+<span id="651">651</span>
+<span id="652">652</span>
+<span id="653">653</span>
+<span id="654">654</span>
+<span id="655">655</span>
+<span id="656">656</span>
+<span id="657">657</span>
+<span id="658">658</span>
+<span id="659">659</span>
+<span id="660">660</span>
+<span id="661">661</span>
+<span id="662">662</span>
+<span id="663">663</span>
+<span id="664">664</span>
+<span id="665">665</span>
+<span id="666">666</span>
+<span id="667">667</span>
+<span id="668">668</span>
+<span id="669">669</span>
+<span id="670">670</span>
+<span id="671">671</span>
+<span id="672">672</span>
+<span id="673">673</span>
+<span id="674">674</span>
+<span id="675">675</span>
+<span id="676">676</span>
+<span id="677">677</span>
+<span id="678">678</span>
+<span id="679">679</span>
+<span id="680">680</span>
+<span id="681">681</span>
+<span id="682">682</span>
+<span id="683">683</span>
+<span id="684">684</span>
+<span id="685">685</span>
+<span id="686">686</span>
+<span id="687">687</span>
+<span id="688">688</span>
+<span id="689">689</span>
+<span id="690">690</span>
+<span id="691">691</span>
+<span id="692">692</span>
+<span id="693">693</span>
+<span id="694">694</span>
+<span id="695">695</span>
+<span id="696">696</span>
+<span id="697">697</span>
+<span id="698">698</span>
+<span id="699">699</span>
+<span id="700">700</span>
+<span id="701">701</span>
+<span id="702">702</span>
+<span id="703">703</span>
+<span id="704">704</span>
+<span id="705">705</span>
+<span id="706">706</span>
+<span id="707">707</span>
+<span id="708">708</span>
+<span id="709">709</span>
+<span id="710">710</span>
+<span id="711">711</span>
+<span id="712">712</span>
+<span id="713">713</span>
+<span id="714">714</span>
+<span id="715">715</span>
+<span id="716">716</span>
+<span id="717">717</span>
+<span id="718">718</span>
+<span id="719">719</span>
+<span id="720">720</span>
+<span id="721">721</span>
+<span id="722">722</span>
+<span id="723">723</span>
+<span id="724">724</span>
+<span id="725">725</span>
+<span id="726">726</span>
+<span id="727">727</span>
+<span id="728">728</span>
+<span id="729">729</span>
+<span id="730">730</span>
+<span id="731">731</span>
+<span id="732">732</span>
+<span id="733">733</span>
+<span id="734">734</span>
+<span id="735">735</span>
+<span id="736">736</span>
+<span id="737">737</span>
+<span id="738">738</span>
+<span id="739">739</span>
+<span id="740">740</span>
+<span id="741">741</span>
+<span id="742">742</span>
+<span id="743">743</span>
+<span id="744">744</span>
+<span id="745">745</span>
+<span id="746">746</span>
+<span id="747">747</span>
+<span id="748">748</span>
+<span id="749">749</span>
+<span id="750">750</span>
+<span id="751">751</span>
+<span id="752">752</span>
+<span id="753">753</span>
+<span id="754">754</span>
+<span id="755">755</span>
+<span id="756">756</span>
+<span id="757">757</span>
+<span id="758">758</span>
+<span id="759">759</span>
+<span id="760">760</span>
+<span id="761">761</span>
+<span id="762">762</span>
+<span id="763">763</span>
+<span id="764">764</span>
+<span id="765">765</span>
+<span id="766">766</span>
+<span id="767">767</span>
+<span id="768">768</span>
+<span id="769">769</span>
+<span id="770">770</span>
+<span id="771">771</span>
+<span id="772">772</span>
+<span id="773">773</span>
+<span id="774">774</span>
+<span id="775">775</span>
+<span id="776">776</span>
+<span id="777">777</span>
+<span id="778">778</span>
+<span id="779">779</span>
+<span id="780">780</span>
+<span id="781">781</span>
+<span id="782">782</span>
+<span id="783">783</span>
+<span id="784">784</span>
+<span id="785">785</span>
+<span id="786">786</span>
+<span id="787">787</span>
+<span id="788">788</span>
+<span id="789">789</span>
+<span id="790">790</span>
+<span id="791">791</span>
+<span id="792">792</span>
+<span id="793">793</span>
+<span id="794">794</span>
+<span id="795">795</span>
+<span id="796">796</span>
+<span id="797">797</span>
+<span id="798">798</span>
+<span id="799">799</span>
+<span id="800">800</span>
+<span id="801">801</span>
+<span id="802">802</span>
+<span id="803">803</span>
+<span id="804">804</span>
+<span id="805">805</span>
+<span id="806">806</span>
+<span id="807">807</span>
+<span id="808">808</span>
+<span id="809">809</span>
+<span id="810">810</span>
+<span id="811">811</span>
+<span id="812">812</span>
+<span id="813">813</span>
+<span id="814">814</span>
+<span id="815">815</span>
+<span id="816">816</span>
+<span id="817">817</span>
+<span id="818">818</span>
+<span id="819">819</span>
+<span id="820">820</span>
+<span id="821">821</span>
+<span id="822">822</span>
+<span id="823">823</span>
+<span id="824">824</span>
+<span id="825">825</span>
+<span id="826">826</span>
+<span id="827">827</span>
+<span id="828">828</span>
+<span id="829">829</span>
+<span id="830">830</span>
+<span id="831">831</span>
+<span id="832">832</span>
+<span id="833">833</span>
+<span id="834">834</span>
+<span id="835">835</span>
+<span id="836">836</span>
+<span id="837">837</span>
+<span id="838">838</span>
+<span id="839">839</span>
+<span id="840">840</span>
+<span id="841">841</span>
+<span id="842">842</span>
+<span id="843">843</span>
+<span id="844">844</span>
+<span id="845">845</span>
+<span id="846">846</span>
+<span id="847">847</span>
+<span id="848">848</span>
+<span id="849">849</span>
+<span id="850">850</span>
+<span id="851">851</span>
+<span id="852">852</span>
+<span id="853">853</span>
+<span id="854">854</span>
+<span id="855">855</span>
+<span id="856">856</span>
+<span id="857">857</span>
+<span id="858">858</span>
+<span id="859">859</span>
+<span id="860">860</span>
+<span id="861">861</span>
+<span id="862">862</span>
+<span id="863">863</span>
+<span id="864">864</span>
+<span id="865">865</span>
+<span id="866">866</span>
+<span id="867">867</span>
+<span id="868">868</span>
+<span id="869">869</span>
+<span id="870">870</span>
+<span id="871">871</span>
+<span id="872">872</span>
+<span id="873">873</span>
+<span id="874">874</span>
+<span id="875">875</span>
+<span id="876">876</span>
+<span id="877">877</span>
+<span id="878">878</span>
+<span id="879">879</span>
+<span id="880">880</span>
+<span id="881">881</span>
+<span id="882">882</span>
+<span id="883">883</span>
+<span id="884">884</span>
+<span id="885">885</span>
+<span id="886">886</span>
+<span id="887">887</span>
+<span id="888">888</span>
+<span id="889">889</span>
+<span id="890">890</span>
+<span id="891">891</span>
+<span id="892">892</span>
+<span id="893">893</span>
+<span id="894">894</span>
+<span id="895">895</span>
+<span id="896">896</span>
+<span id="897">897</span>
+<span id="898">898</span>
+<span id="899">899</span>
+<span id="900">900</span>
+<span id="901">901</span>
+<span id="902">902</span>
+<span id="903">903</span>
+<span id="904">904</span>
+<span id="905">905</span>
+<span id="906">906</span>
+<span id="907">907</span>
+<span id="908">908</span>
+<span id="909">909</span>
+<span id="910">910</span>
+<span id="911">911</span>
+<span id="912">912</span>
+<span id="913">913</span>
+<span id="914">914</span>
+<span id="915">915</span>
+<span id="916">916</span>
+<span id="917">917</span>
+<span id="918">918</span>
+<span id="919">919</span>
+<span id="920">920</span>
+<span id="921">921</span>
+<span id="922">922</span>
+<span id="923">923</span>
+<span id="924">924</span>
+<span id="925">925</span>
+<span id="926">926</span>
+<span id="927">927</span>
+<span id="928">928</span>
+<span id="929">929</span>
+<span id="930">930</span>
+<span id="931">931</span>
+<span id="932">932</span>
+<span id="933">933</span>
+<span id="934">934</span>
+<span id="935">935</span>
+<span id="936">936</span>
+<span id="937">937</span>
+<span id="938">938</span>
+<span id="939">939</span>
+<span id="940">940</span>
+</pre><pre class="rust"><code><span class="kw">use</span> <span class="ident">alloc::vec::Vec</span>;
+<span class="kw">use</span> <span class="ident">core::ops::Deref</span>;
+<span class="kw">use</span> <span class="ident">lazy_static::lazy_static</span>;
+<span class="kw">use</span> <span class="ident">num_bigint::traits::ModInverse</span>;
+<span class="kw">use</span> <span class="ident">num_bigint::Sign::Plus</span>;
+<span class="kw">use</span> <span class="ident">num_bigint</span>::{<span class="ident">BigInt</span>, <span class="ident">BigUint</span>};
+<span class="kw">use</span> <span class="ident">num_traits</span>::{<span class="ident">FromPrimitive</span>, <span class="ident">One</span>};
+<span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">rngs::StdRng</span>, <span class="ident">Rng</span>};
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>)]</span>
+<span class="kw">use</span> <span class="ident">serde_crate</span>::{<span class="ident">Deserialize</span>, <span class="ident">Serialize</span>};
+<span class="kw">use</span> <span class="ident">zeroize::Zeroize</span>;
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::algorithms</span>::{<span class="ident">generate_multi_prime_key</span>, <span class="ident">generate_multi_prime_key_with_exp</span>};
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::errors</span>::{<span class="ident">Error</span>, <span class="prelude-ty">Result</span>};
+
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::padding::PaddingScheme</span>;
+<span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::raw</span>::{<span class="ident">DecryptionPrimitive</span>, <span class="ident">EncryptionPrimitive</span>};
+<span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">oaep</span>, <span class="ident">pkcs1v15</span>, <span class="ident">pss</span>};
+
+<span class="macro">lazy_static!</span> {
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">MIN_PUB_EXPONENT</span>: <span class="ident">BigUint</span> <span class="op">=</span> <span class="ident">BigUint::from_u64</span>(<span class="number">2</span>).<span class="ident">unwrap</span>();
+    <span class="kw">static</span> <span class="kw-2">ref</span> <span class="ident">MAX_PUB_EXPONENT</span>: <span class="ident">BigUint</span> <span class="op">=</span> <span class="ident">BigUint::from_u64</span>(<span class="number">1</span> <span class="op">&lt;</span><span class="op">&lt;</span> (<span class="number">31</span> <span class="op">-</span> <span class="number">1</span>)).<span class="ident">unwrap</span>();
+}
+
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PublicKeyParts</span> {
+    <span class="doccomment">/// Returns the modulus of the key.</span>
+    <span class="kw">fn</span> <span class="ident">n</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span>;
+
+    <span class="doccomment">/// Returns the public exponent of the key.</span>
+    <span class="kw">fn</span> <span class="ident">e</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span>;
+
+    <span class="doccomment">/// Returns the modulus size in bytes. Raw signatures and ciphertexts for</span>
+    <span class="doccomment">/// or by this public key will have the same size.</span>
+    <span class="kw">fn</span> <span class="ident">size</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">usize</span> {
+        (<span class="self">self</span>.<span class="ident">n</span>().<span class="ident">bits</span>() <span class="op">+</span> <span class="number">7</span>) <span class="op">/</span> <span class="number">8</span>
+    }
+}
+
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PrivateKey</span>: <span class="ident">DecryptionPrimitive</span> <span class="op">+</span> <span class="ident">PublicKeyParts</span> {}
+
+<span class="doccomment">/// Represents the public part of an RSA key.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">PartialEq</span>, <span class="ident">Eq</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>),
+    <span class="ident">serde</span>(<span class="kw">crate</span> <span class="op">=</span> <span class="string">&quot;serde_crate&quot;</span>)
+)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RsaPublicKey</span> {
+    <span class="ident">n</span>: <span class="ident">BigUint</span>,
+    <span class="ident">e</span>: <span class="ident">BigUint</span>,
+}
+
+<span class="doccomment">/// Represents a whole RSA key, public and private parts.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
+<span class="attribute">#[<span class="ident">cfg_attr</span>(
+    <span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>,
+    <span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>),
+    <span class="ident">serde</span>(<span class="kw">crate</span> <span class="op">=</span> <span class="string">&quot;serde_crate&quot;</span>)
+)]</span>
+<span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="doccomment">/// Public components of the private key.</span>
+    <span class="ident">pubkey_components</span>: <span class="ident">RsaPublicKey</span>,
+    <span class="doccomment">/// Private exponent</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">d</span>: <span class="ident">BigUint</span>,
+    <span class="doccomment">/// Prime factors of N, contains &gt;= 2 elements.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">primes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BigUint</span><span class="op">&gt;</span>,
+    <span class="doccomment">/// precomputed values to speed up private operations</span>
+    <span class="attribute">#[<span class="ident">cfg_attr</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde&quot;</span>, <span class="ident">serde</span>(<span class="ident">skip</span>))]</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">precomputed</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">PrecomputedValues</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">PartialEq</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="attribute">#[<span class="ident">inline</span>]</span>
+    <span class="kw">fn</span> <span class="ident">eq</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">other</span>: <span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span>) -&gt; <span class="ident">bool</span> {
+        <span class="self">self</span>.<span class="ident">pubkey_components</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">pubkey_components</span>
+            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">d</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">d</span>
+            <span class="op">&amp;&amp;</span> <span class="self">self</span>.<span class="ident">primes</span> <span class="op">==</span> <span class="ident">other</span>.<span class="ident">primes</span>
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">Eq</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {}
+
+<span class="kw">impl</span> <span class="ident">Zeroize</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="kw">fn</span> <span class="ident">zeroize</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">d</span>.<span class="ident">zeroize</span>();
+        <span class="kw">for</span> <span class="ident">prime</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">primes</span>.<span class="ident">iter_mut</span>() {
+            <span class="ident">prime</span>.<span class="ident">zeroize</span>();
+        }
+        <span class="self">self</span>.<span class="ident">primes</span>.<span class="ident">clear</span>();
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">precomputed</span>.<span class="ident">is_some</span>() {
+            <span class="self">self</span>.<span class="ident">precomputed</span>.<span class="ident">take</span>().<span class="ident">unwrap</span>().<span class="ident">zeroize</span>();
+        }
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">zeroize</span>();
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">Deref</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="kw">type</span> <span class="ident">Target</span> <span class="op">=</span> <span class="ident">RsaPublicKey</span>;
+    <span class="kw">fn</span> <span class="ident">deref</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">RsaPublicKey</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">pubkey_components</span>
+    }
+}
+
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">PrecomputedValues</span> {
+    <span class="doccomment">/// D mod (P-1)</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">dp</span>: <span class="ident">BigUint</span>,
+    <span class="doccomment">/// D mod (Q-1)</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">dq</span>: <span class="ident">BigUint</span>,
+    <span class="doccomment">/// Q^-1 mod P</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">qinv</span>: <span class="ident">BigInt</span>,
+
+    <span class="doccomment">/// CRTValues is used for the 3rd and subsequent primes. Due to a</span>
+    <span class="doccomment">/// historical accident, the CRT for the first two primes is handled</span>
+    <span class="doccomment">/// differently in PKCS#1 and interoperability is sufficiently</span>
+    <span class="doccomment">/// important that we mirror this.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">crt_values</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CRTValue</span><span class="op">&gt;</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">Zeroize</span> <span class="kw">for</span> <span class="ident">PrecomputedValues</span> {
+    <span class="kw">fn</span> <span class="ident">zeroize</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">dp</span>.<span class="ident">zeroize</span>();
+        <span class="self">self</span>.<span class="ident">dq</span>.<span class="ident">zeroize</span>();
+        <span class="self">self</span>.<span class="ident">qinv</span>.<span class="ident">zeroize</span>();
+        <span class="kw">for</span> <span class="ident">val</span> <span class="kw">in</span> <span class="self">self</span>.<span class="ident">crt_values</span>.<span class="ident">iter_mut</span>() {
+            <span class="ident">val</span>.<span class="ident">zeroize</span>();
+        }
+        <span class="self">self</span>.<span class="ident">crt_values</span>.<span class="ident">clear</span>();
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">Drop</span> <span class="kw">for</span> <span class="ident">PrecomputedValues</span> {
+    <span class="kw">fn</span> <span class="ident">drop</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) {
+        <span class="self">self</span>.<span class="ident">zeroize</span>();
+    }
+}
+
+<span class="doccomment">/// Contains the precomputed Chinese remainder theorem values.</span>
+<span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Debug</span>, <span class="ident">Clone</span>, <span class="ident">Zeroize</span>)]</span>
+<span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">struct</span> <span class="ident">CRTValue</span> {
+    <span class="doccomment">/// D mod (prime - 1)</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">exp</span>: <span class="ident">BigInt</span>,
+    <span class="doccomment">/// R·Coeff ≡ 1 mod Prime.</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">coeff</span>: <span class="ident">BigInt</span>,
+    <span class="doccomment">/// product of primes prior to this (inc p and q)</span>
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="ident">r</span>: <span class="ident">BigInt</span>,
+}
+
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="ident">RsaPrivateKey</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RsaPublicKey</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">private_key</span>: <span class="ident">RsaPrivateKey</span>) -&gt; <span class="self">Self</span> {
+        (<span class="kw-2">&amp;</span><span class="ident">private_key</span>).<span class="ident">into</span>()
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">From</span><span class="op">&lt;</span><span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span><span class="op">&gt;</span> <span class="kw">for</span> <span class="ident">RsaPublicKey</span> {
+    <span class="kw">fn</span> <span class="ident">from</span>(<span class="ident">private_key</span>: <span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span>) -&gt; <span class="self">Self</span> {
+        <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">n</span>.<span class="ident">clone</span>();
+        <span class="kw">let</span> <span class="ident">e</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">e</span>.<span class="ident">clone</span>();
+
+        <span class="ident">RsaPublicKey</span> { <span class="ident">n</span>, <span class="ident">e</span> }
+    }
+}
+
+<span class="doccomment">/// Generic trait for operations on a public key.</span>
+<span class="kw">pub</span> <span class="kw">trait</span> <span class="ident">PublicKey</span>: <span class="ident">EncryptionPrimitive</span> <span class="op">+</span> <span class="ident">PublicKeyParts</span> {
+    <span class="doccomment">/// Encrypt the given message.</span>
+    <span class="kw">fn</span> <span class="ident">encrypt</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">msg</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span>;
+
+    <span class="doccomment">/// Verify a signed message.</span>
+    <span class="doccomment">/// `hashed`must be the result of hashing the input using the hashing function</span>
+    <span class="doccomment">/// passed in through `hash`.</span>
+    <span class="doccomment">/// If the message is valid `Ok(())` is returned, otherwiese an `Err` indicating failure.</span>
+    <span class="kw">fn</span> <span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">hashed</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">sig</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span>;
+}
+
+<span class="kw">impl</span> <span class="ident">PublicKeyParts</span> <span class="kw">for</span> <span class="ident">RsaPublicKey</span> {
+    <span class="kw">fn</span> <span class="ident">n</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">n</span>
+    }
+
+    <span class="kw">fn</span> <span class="ident">e</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">e</span>
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">PublicKey</span> <span class="kw">for</span> <span class="ident">RsaPublicKey</span> {
+    <span class="kw">fn</span> <span class="ident">encrypt</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">msg</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="ident">PaddingScheme::PKCS1v15Encrypt</span> =&gt; <span class="ident">pkcs1v15::encrypt</span>(<span class="ident">rng</span>, <span class="self">self</span>, <span class="ident">msg</span>),
+            <span class="ident">PaddingScheme::OAEP</span> {
+                <span class="kw-2">mut</span> <span class="ident">digest</span>,
+                <span class="kw-2">mut</span> <span class="ident">mgf_digest</span>,
+                <span class="ident">label</span>,
+            } =&gt; <span class="ident">oaep::encrypt</span>(<span class="ident">rng</span>, <span class="self">self</span>, <span class="ident">msg</span>, <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>, <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">mgf_digest</span>, <span class="ident">label</span>),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+
+    <span class="kw">fn</span> <span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">hashed</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">sig</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="ident">PaddingScheme::PKCS1v15Sign</span> { <span class="kw-2">ref</span> <span class="ident">hash</span> } =&gt; {
+                <span class="ident">pkcs1v15::verify</span>(<span class="self">self</span>, <span class="ident">hash</span>.<span class="ident">as_ref</span>(), <span class="ident">hashed</span>, <span class="ident">sig</span>)
+            }
+            <span class="ident">PaddingScheme::PSS</span> { <span class="kw-2">mut</span> <span class="ident">digest</span>, .. } =&gt; <span class="ident">pss::verify</span>(<span class="self">self</span>, <span class="ident">hashed</span>, <span class="ident">sig</span>, <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">RsaPublicKey</span> {
+    <span class="doccomment">/// Create a new key from its components.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span>(<span class="ident">n</span>: <span class="ident">BigUint</span>, <span class="ident">e</span>: <span class="ident">BigUint</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="self">Self</span><span class="op">&gt;</span> {
+        <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">RsaPublicKey</span> { <span class="ident">n</span>, <span class="ident">e</span> };
+        <span class="ident">check_public</span>(<span class="kw-2">&amp;</span><span class="ident">k</span>)<span class="question-mark">?</span>;
+
+        <span class="prelude-val">Ok</span>(<span class="ident">k</span>)
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">PublicKeyParts</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RsaPublicKey</span> {
+    <span class="doccomment">/// Returns the modulus of the key.</span>
+    <span class="kw">fn</span> <span class="ident">n</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">n</span>
+    }
+
+    <span class="doccomment">/// Returns the public exponent of the key.</span>
+    <span class="kw">fn</span> <span class="ident">e</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">e</span>
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">PublicKey</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RsaPublicKey</span> {
+    <span class="kw">fn</span> <span class="ident">encrypt</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">msg</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        (<span class="kw-2">*</span><span class="self">self</span>).<span class="ident">encrypt</span>(<span class="ident">rng</span>, <span class="ident">padding</span>, <span class="ident">msg</span>)
+    }
+
+    <span class="kw">fn</span> <span class="ident">verify</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">hashed</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>], <span class="ident">sig</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        (<span class="kw-2">*</span><span class="self">self</span>).<span class="ident">verify</span>(<span class="ident">padding</span>, <span class="ident">hashed</span>, <span class="ident">sig</span>)
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">PublicKeyParts</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="kw">fn</span> <span class="ident">n</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">n</span>
+    }
+
+    <span class="kw">fn</span> <span class="ident">e</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">e</span>
+    }
+}
+
+<span class="kw">impl</span> <span class="ident">PrivateKey</span> <span class="kw">for</span> <span class="ident">RsaPrivateKey</span> {}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">PublicKeyParts</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="kw">fn</span> <span class="ident">n</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">n</span>
+    }
+
+    <span class="kw">fn</span> <span class="ident">e</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">e</span>
+    }
+}
+
+<span class="kw">impl</span><span class="op">&lt;</span><span class="lifetime">&#39;a</span><span class="op">&gt;</span> <span class="ident">PrivateKey</span> <span class="kw">for</span> <span class="kw-2">&amp;</span><span class="lifetime">&#39;a</span> <span class="ident">RsaPrivateKey</span> {}
+
+<span class="kw">impl</span> <span class="ident">RsaPrivateKey</span> {
+    <span class="doccomment">/// Generate a new Rsa key pair of the given bit size using the passed in `rng`.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(<span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>, <span class="ident">bit_size</span>: <span class="ident">usize</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RsaPrivateKey</span><span class="op">&gt;</span> {
+        <span class="ident">generate_multi_prime_key</span>(<span class="ident">rng</span>, <span class="number">2</span>, <span class="ident">bit_size</span>)
+    }
+
+    <span class="doccomment">/// Generate a new RSA key pair of the given bit size and the public exponent</span>
+    <span class="doccomment">/// using the passed in `rng`.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Unless you have specific needs, you should use `RsaPrivateKey::new` instead.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">new_with_exp</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(
+        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
+        <span class="ident">bit_size</span>: <span class="ident">usize</span>,
+        <span class="ident">exp</span>: <span class="kw-2">&amp;</span><span class="ident">BigUint</span>,
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">RsaPrivateKey</span><span class="op">&gt;</span> {
+        <span class="ident">generate_multi_prime_key_with_exp</span>(<span class="ident">rng</span>, <span class="number">2</span>, <span class="ident">bit_size</span>, <span class="ident">exp</span>)
+    }
+
+    <span class="doccomment">/// Constructs an RSA key pair from the individual components.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">from_components</span>(
+        <span class="ident">n</span>: <span class="ident">BigUint</span>,
+        <span class="ident">e</span>: <span class="ident">BigUint</span>,
+        <span class="ident">d</span>: <span class="ident">BigUint</span>,
+        <span class="ident">primes</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">BigUint</span><span class="op">&gt;</span>,
+    ) -&gt; <span class="ident">RsaPrivateKey</span> {
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">RsaPrivateKey</span> {
+            <span class="ident">pubkey_components</span>: <span class="ident">RsaPublicKey</span> { <span class="ident">n</span>, <span class="ident">e</span> },
+            <span class="ident">d</span>,
+            <span class="ident">primes</span>,
+            <span class="ident">precomputed</span>: <span class="prelude-val">None</span>,
+        };
+
+        <span class="comment">// precompute when possible, ignore error otherwise.</span>
+        <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">k</span>.<span class="ident">precompute</span>();
+
+        <span class="ident">k</span>
+    }
+
+    <span class="doccomment">/// Get the public key from the private key, cloning `n` and `e`.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Generally this is not needed since `RsaPrivateKey` implements the `PublicKey` trait,</span>
+    <span class="doccomment">/// but it can occationally be useful to discard the private information entirely.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">to_public_key</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="ident">RsaPublicKey</span> {
+        <span class="comment">// Safe to unwrap since n and e are already verified.</span>
+        <span class="ident">RsaPublicKey::new</span>(<span class="self">self</span>.<span class="ident">n</span>().<span class="ident">clone</span>(), <span class="self">self</span>.<span class="ident">e</span>().<span class="ident">clone</span>()).<span class="ident">unwrap</span>()
+    }
+
+    <span class="doccomment">/// Performs some calculations to speed up private key operations.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">precompute</span>(<span class="kw-2">&amp;mut</span> <span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="kw">if</span> <span class="self">self</span>.<span class="ident">precomputed</span>.<span class="ident">is_some</span>() {
+            <span class="kw">return</span> <span class="prelude-val">Ok</span>(());
+        }
+
+        <span class="kw">let</span> <span class="ident">dp</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">d</span> <span class="op">%</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">0</span>] <span class="op">-</span> <span class="ident">BigUint::one</span>());
+        <span class="kw">let</span> <span class="ident">dq</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">d</span> <span class="op">%</span> (<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">1</span>] <span class="op">-</span> <span class="ident">BigUint::one</span>());
+        <span class="kw">let</span> <span class="ident">qinv</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">primes</span>[<span class="number">1</span>]
+            .<span class="ident">clone</span>()
+            .<span class="ident">mod_inverse</span>(<span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">0</span>])
+            .<span class="ident">ok_or</span>(<span class="ident">Error::InvalidPrime</span>)<span class="question-mark">?</span>;
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">r</span>: <span class="ident">BigUint</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">0</span>] <span class="op">*</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">1</span>];
+        <span class="kw">let</span> <span class="ident">crt_values</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">CRTValue</span><span class="op">&gt;</span> <span class="op">=</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">values</span> <span class="op">=</span> <span class="ident">Vec::with_capacity</span>(<span class="self">self</span>.<span class="ident">primes</span>.<span class="ident">len</span>() <span class="op">-</span> <span class="number">2</span>);
+            <span class="kw">for</span> <span class="ident">prime</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>[<span class="number">2</span>..] {
+                <span class="kw">let</span> <span class="ident">res</span> <span class="op">=</span> <span class="ident">CRTValue</span> {
+                    <span class="ident">exp</span>: <span class="ident">BigInt::from_biguint</span>(<span class="ident">Plus</span>, <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">d</span> <span class="op">%</span> (<span class="ident">prime</span> <span class="op">-</span> <span class="ident">BigUint::one</span>())),
+                    <span class="ident">r</span>: <span class="ident">BigInt::from_biguint</span>(<span class="ident">Plus</span>, <span class="ident">r</span>.<span class="ident">clone</span>()),
+                    <span class="ident">coeff</span>: <span class="ident">BigInt::from_biguint</span>(
+                        <span class="ident">Plus</span>,
+                        <span class="ident">r</span>.<span class="ident">clone</span>()
+                            .<span class="ident">mod_inverse</span>(<span class="ident">prime</span>)
+                            .<span class="ident">ok_or</span>(<span class="ident">Error::InvalidCoefficient</span>)<span class="question-mark">?</span>
+                            .<span class="ident">to_biguint</span>()
+                            .<span class="ident">unwrap</span>(),
+                    ),
+                };
+                <span class="ident">r</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">prime</span>;
+
+                <span class="ident">values</span>.<span class="ident">push</span>(<span class="ident">res</span>);
+            }
+            <span class="ident">values</span>
+        };
+
+        <span class="self">self</span>.<span class="ident">precomputed</span> <span class="op">=</span> <span class="prelude-val">Some</span>(<span class="ident">PrecomputedValues</span> {
+            <span class="ident">dp</span>,
+            <span class="ident">dq</span>,
+            <span class="ident">qinv</span>,
+            <span class="ident">crt_values</span>,
+        });
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Returns the private exponent of the key.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">d</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span><span class="ident">BigUint</span> {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">d</span>
+    }
+
+    <span class="doccomment">/// Returns the prime factors.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">primes</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="kw-2">&amp;</span>[<span class="ident">BigUint</span>] {
+        <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span>
+    }
+
+    <span class="doccomment">/// Performs basic sanity checks on the key.</span>
+    <span class="doccomment">/// Returns `Ok(())` if everything is good, otherwise an approriate error.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">validate</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+        <span class="ident">check_public</span>(<span class="self">self</span>)<span class="question-mark">?</span>;
+
+        <span class="comment">// Check that Πprimes == n.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">m</span> <span class="op">=</span> <span class="ident">BigUint::one</span>();
+        <span class="kw">for</span> <span class="ident">prime</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span> {
+            <span class="comment">// Any primes ≤ 1 will cause divide-by-zero panics later.</span>
+            <span class="kw">if</span> <span class="kw-2">*</span><span class="ident">prime</span> <span class="op">&lt;</span> <span class="ident">BigUint::one</span>() {
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPrime</span>);
+            }
+            <span class="ident">m</span> <span class="kw-2">*</span><span class="op">=</span> <span class="ident">prime</span>;
+        }
+        <span class="kw">if</span> <span class="ident">m</span> <span class="op">!</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">n</span> {
+            <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidModulus</span>);
+        }
+
+        <span class="comment">// Check that de ≡ 1 mod p-1, for each prime.</span>
+        <span class="comment">// This implies that e is coprime to each p-1 as e has a multiplicative</span>
+        <span class="comment">// inverse. Therefore e is coprime to lcm(p-1,q-1,r-1,...) =</span>
+        <span class="comment">// exponent(ℤ/nℤ). It also implies that a^de ≡ a mod p as a^(p-1) ≡ 1</span>
+        <span class="comment">// mod p. Thus a^de ≡ a mod n for all a coprime to n, as required.</span>
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">de</span> <span class="op">=</span> <span class="self">self</span>.<span class="ident">e</span>.<span class="ident">clone</span>();
+        <span class="ident">de</span> <span class="kw-2">*</span><span class="op">=</span> <span class="self">self</span>.<span class="ident">d</span>.<span class="ident">clone</span>();
+        <span class="kw">for</span> <span class="ident">prime</span> <span class="kw">in</span> <span class="kw-2">&amp;</span><span class="self">self</span>.<span class="ident">primes</span> {
+            <span class="kw">let</span> <span class="ident">congruence</span>: <span class="ident">BigUint</span> <span class="op">=</span> <span class="kw-2">&amp;</span><span class="ident">de</span> <span class="op">%</span> (<span class="ident">prime</span> <span class="op">-</span> <span class="ident">BigUint::one</span>());
+            <span class="kw">if</span> <span class="op">!</span><span class="ident">congruence</span>.<span class="ident">is_one</span>() {
+                <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidExponent</span>);
+            }
+        }
+
+        <span class="prelude-val">Ok</span>(())
+    }
+
+    <span class="doccomment">/// Decrypt the given message.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decrypt</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">ciphertext</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="comment">// need to pass any Rng as the type arg, so the type checker is happy, it is not actually used for anything</span>
+            <span class="ident">PaddingScheme::PKCS1v15Encrypt</span> =&gt; {
+                <span class="ident">pkcs1v15::decrypt</span>::<span class="op">&lt;</span><span class="ident">StdRng</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="prelude-val">None</span>, <span class="self">self</span>, <span class="ident">ciphertext</span>)
+            }
+            <span class="ident">PaddingScheme::OAEP</span> {
+                <span class="kw-2">mut</span> <span class="ident">digest</span>,
+                <span class="kw-2">mut</span> <span class="ident">mgf_digest</span>,
+                <span class="ident">label</span>,
+            } =&gt; <span class="ident">oaep::decrypt</span>::<span class="op">&lt;</span><span class="ident">StdRng</span>, <span class="kw">_</span><span class="op">&gt;</span>(
+                <span class="prelude-val">None</span>,
+                <span class="self">self</span>,
+                <span class="ident">ciphertext</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">mgf_digest</span>,
+                <span class="ident">label</span>,
+            ),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+
+    <span class="doccomment">/// Decrypt the given message.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Uses `rng` to blind the decryption process.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">decrypt_blinded</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
+        <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>,
+        <span class="ident">ciphertext</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="ident">PaddingScheme::PKCS1v15Encrypt</span> =&gt; <span class="ident">pkcs1v15::decrypt</span>(<span class="prelude-val">Some</span>(<span class="ident">rng</span>), <span class="self">self</span>, <span class="ident">ciphertext</span>),
+            <span class="ident">PaddingScheme::OAEP</span> {
+                <span class="kw-2">mut</span> <span class="ident">digest</span>,
+                <span class="kw-2">mut</span> <span class="ident">mgf_digest</span>,
+                <span class="ident">label</span>,
+            } =&gt; <span class="ident">oaep::decrypt</span>(
+                <span class="prelude-val">Some</span>(<span class="ident">rng</span>),
+                <span class="self">self</span>,
+                <span class="ident">ciphertext</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">mgf_digest</span>,
+                <span class="ident">label</span>,
+            ),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+
+    <span class="doccomment">/// Sign the given digest.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sign</span>(<span class="kw-2">&amp;</span><span class="self">self</span>, <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>, <span class="ident">digest_in</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>]) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="comment">// need to pass any Rng as the type arg, so the type checker is happy, it is not actually used for anything</span>
+            <span class="ident">PaddingScheme::PKCS1v15Sign</span> { <span class="kw-2">ref</span> <span class="ident">hash</span> } =&gt; {
+                <span class="ident">pkcs1v15::sign</span>::<span class="op">&lt;</span><span class="ident">StdRng</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="prelude-val">None</span>, <span class="self">self</span>, <span class="ident">hash</span>.<span class="ident">as_ref</span>(), <span class="ident">digest_in</span>)
+            }
+            <span class="ident">PaddingScheme::PSS</span> {
+                <span class="kw-2">mut</span> <span class="ident">salt_rng</span>,
+                <span class="kw-2">mut</span> <span class="ident">digest</span>,
+                <span class="ident">salt_len</span>,
+            } =&gt; <span class="ident">pss::sign</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">StdRng</span>, <span class="kw">_</span><span class="op">&gt;</span>(
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">salt_rng</span>,
+                <span class="prelude-val">None</span>,
+                <span class="self">self</span>,
+                <span class="ident">digest_in</span>,
+                <span class="ident">salt_len</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>,
+            ),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+
+    <span class="doccomment">/// Sign the given digest.</span>
+    <span class="doccomment">///</span>
+    <span class="doccomment">/// Use `rng` for blinding.</span>
+    <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">sign_blinded</span><span class="op">&lt;</span><span class="ident">R</span>: <span class="ident">Rng</span><span class="op">&gt;</span>(
+        <span class="kw-2">&amp;</span><span class="self">self</span>,
+        <span class="ident">rng</span>: <span class="kw-2">&amp;mut</span> <span class="ident">R</span>,
+        <span class="ident">padding</span>: <span class="ident">PaddingScheme</span>,
+        <span class="ident">digest_in</span>: <span class="kw-2">&amp;</span>[<span class="ident">u8</span>],
+    ) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span><span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span><span class="op">&gt;</span> {
+        <span class="kw">match</span> <span class="ident">padding</span> {
+            <span class="ident">PaddingScheme::PKCS1v15Sign</span> { <span class="kw-2">ref</span> <span class="ident">hash</span> } =&gt; {
+                <span class="ident">pkcs1v15::sign</span>(<span class="prelude-val">Some</span>(<span class="ident">rng</span>), <span class="self">self</span>, <span class="ident">hash</span>.<span class="ident">as_ref</span>(), <span class="ident">digest_in</span>)
+            }
+            <span class="ident">PaddingScheme::PSS</span> {
+                <span class="kw-2">mut</span> <span class="ident">salt_rng</span>,
+                <span class="kw-2">mut</span> <span class="ident">digest</span>,
+                <span class="ident">salt_len</span>,
+            } =&gt; <span class="ident">pss::sign</span>::<span class="op">&lt;</span><span class="kw">_</span>, <span class="ident">R</span>, <span class="kw">_</span><span class="op">&gt;</span>(
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">salt_rng</span>,
+                <span class="prelude-val">Some</span>(<span class="ident">rng</span>),
+                <span class="self">self</span>,
+                <span class="ident">digest_in</span>,
+                <span class="ident">salt_len</span>,
+                <span class="kw-2">&amp;mut</span> <span class="kw-2">*</span><span class="ident">digest</span>,
+            ),
+            <span class="kw">_</span> =&gt; <span class="prelude-val">Err</span>(<span class="ident">Error::InvalidPaddingScheme</span>),
+        }
+    }
+}
+
+<span class="doccomment">/// Check that the public key is well formed and has an exponent within acceptable bounds.</span>
+<span class="attribute">#[<span class="ident">inline</span>]</span>
+<span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">check_public</span>(<span class="ident">public_key</span>: <span class="kw-2">&amp;</span><span class="kw">impl</span> <span class="ident">PublicKeyParts</span>) -&gt; <span class="prelude-ty">Result</span><span class="op">&lt;</span>()<span class="op">&gt;</span> {
+    <span class="kw">if</span> <span class="ident">public_key</span>.<span class="ident">e</span>() <span class="op">&lt;</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">MIN_PUB_EXPONENT</span> {
+        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::PublicExponentTooSmall</span>);
+    }
+
+    <span class="kw">if</span> <span class="ident">public_key</span>.<span class="ident">e</span>() <span class="op">&gt;</span> <span class="kw-2">&amp;</span><span class="kw-2">*</span><span class="ident">MAX_PUB_EXPONENT</span> {
+        <span class="kw">return</span> <span class="prelude-val">Err</span>(<span class="ident">Error::PublicExponentTooLarge</span>);
+    }
+
+    <span class="prelude-val">Ok</span>(())
+}
+
+<span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
+<span class="kw">mod</span> <span class="ident">tests</span> {
+    <span class="kw">use</span> <span class="kw">super</span>::<span class="kw-2">*</span>;
+    <span class="kw">use</span> <span class="ident"><span class="kw">crate</span>::internals</span>;
+
+    <span class="kw">use</span> <span class="ident">alloc::string::String</span>;
+    <span class="kw">use</span> <span class="ident">digest</span>::{<span class="ident">Digest</span>, <span class="ident">DynDigest</span>};
+    <span class="kw">use</span> <span class="ident">num_traits</span>::{<span class="ident">FromPrimitive</span>, <span class="ident">ToPrimitive</span>};
+    <span class="kw">use</span> <span class="ident">rand</span>::{<span class="ident">distributions::Alphanumeric</span>, <span class="ident">rngs::StdRng</span>, <span class="ident">SeedableRng</span>};
+    <span class="kw">use</span> <span class="ident">sha1::Sha1</span>;
+    <span class="kw">use</span> <span class="ident">sha2</span>::{<span class="ident">Sha224</span>, <span class="ident">Sha256</span>, <span class="ident">Sha384</span>, <span class="ident">Sha512</span>};
+    <span class="kw">use</span> <span class="ident">sha3</span>::{<span class="ident">Sha3_256</span>, <span class="ident">Sha3_384</span>, <span class="ident">Sha3_512</span>};
+    <span class="kw">use</span> <span class="ident">std::time::SystemTime</span>;
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_from_into</span>() {
+        <span class="kw">let</span> <span class="ident">private_key</span> <span class="op">=</span> <span class="ident">RsaPrivateKey</span> {
+            <span class="ident">pubkey_components</span>: <span class="ident">RsaPublicKey</span> {
+                <span class="ident">n</span>: <span class="ident">BigUint::from_u64</span>(<span class="number">100</span>).<span class="ident">unwrap</span>(),
+                <span class="ident">e</span>: <span class="ident">BigUint::from_u64</span>(<span class="number">200</span>).<span class="ident">unwrap</span>(),
+            },
+            <span class="ident">d</span>: <span class="ident">BigUint::from_u64</span>(<span class="number">123</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">primes</span>: <span class="macro">vec!</span>[],
+            <span class="ident">precomputed</span>: <span class="prelude-val">None</span>,
+        };
+        <span class="kw">let</span> <span class="ident">public_key</span>: <span class="ident">RsaPublicKey</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">into</span>();
+
+        <span class="macro">assert_eq!</span>(<span class="ident">public_key</span>.<span class="ident">n</span>().<span class="ident">to_u64</span>(), <span class="prelude-val">Some</span>(<span class="number">100</span>));
+        <span class="macro">assert_eq!</span>(<span class="ident">public_key</span>.<span class="ident">e</span>().<span class="ident">to_u64</span>(), <span class="prelude-val">Some</span>(<span class="number">200</span>));
+    }
+
+    <span class="kw">fn</span> <span class="ident">test_key_basics</span>(<span class="ident">private_key</span>: <span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span>) {
+        <span class="ident">private_key</span>.<span class="ident">validate</span>().<span class="ident">expect</span>(<span class="string">&quot;invalid private key&quot;</span>);
+
+        <span class="macro">assert!</span>(
+            <span class="ident">private_key</span>.<span class="ident">d</span>() <span class="op">&lt;</span> <span class="ident">private_key</span>.<span class="ident">n</span>(),
+            <span class="string">&quot;private exponent too large&quot;</span>
+        );
+
+        <span class="kw">let</span> <span class="ident">pub_key</span>: <span class="ident">RsaPublicKey</span> <span class="op">=</span> <span class="ident">private_key</span>.<span class="ident">clone</span>().<span class="ident">into</span>();
+        <span class="kw">let</span> <span class="ident">m</span> <span class="op">=</span> <span class="ident">BigUint::from_u64</span>(<span class="number">42</span>).<span class="ident">expect</span>(<span class="string">&quot;invalid 42&quot;</span>);
+        <span class="kw">let</span> <span class="ident">c</span> <span class="op">=</span> <span class="ident">internals::encrypt</span>(<span class="kw-2">&amp;</span><span class="ident">pub_key</span>, <span class="kw-2">&amp;</span><span class="ident">m</span>);
+        <span class="kw">let</span> <span class="ident">m2</span> <span class="op">=</span> <span class="ident">internals::decrypt</span>::<span class="op">&lt;</span><span class="ident">StdRng</span><span class="op">&gt;</span>(<span class="prelude-val">None</span>, <span class="kw-2">&amp;</span><span class="ident">private_key</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>)
+            .<span class="ident">expect</span>(<span class="string">&quot;unable to decrypt without blinding&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">m</span>, <span class="ident">m2</span>);
+        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+            .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+            .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+        <span class="kw">let</span> <span class="ident">m3</span> <span class="op">=</span> <span class="ident">internals::decrypt</span>(<span class="prelude-val">Some</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>), <span class="kw-2">&amp;</span><span class="ident">private_key</span>, <span class="kw-2">&amp;</span><span class="ident">c</span>)
+            .<span class="ident">expect</span>(<span class="string">&quot;unable to decrypt with blinding&quot;</span>);
+        <span class="macro">assert_eq!</span>(<span class="ident">m</span>, <span class="ident">m3</span>);
+    }
+
+    <span class="macro">macro_rules!</span> <span class="ident">key_generation</span> {
+        (<span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>:<span class="ident">ident</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">multi</span>:<span class="ident">expr</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">size</span>:<span class="ident">expr</span>) =&gt; {
+            <span class="attribute">#[<span class="ident">test</span>]</span>
+            <span class="kw">fn</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">name</span>() {
+                <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+                    .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+                    .<span class="ident">unwrap</span>();
+                <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+
+                <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">10</span> {
+                    <span class="kw">let</span> <span class="ident">private_key</span> <span class="op">=</span> <span class="kw">if</span> <span class="macro-nonterminal">$</span><span class="macro-nonterminal">multi</span> <span class="op">==</span> <span class="number">2</span> {
+                        <span class="ident">RsaPrivateKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">size</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to generate key&quot;</span>)
+                    } <span class="kw">else</span> {
+                        <span class="ident">generate_multi_prime_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">multi</span>, <span class="macro-nonterminal">$</span><span class="macro-nonterminal">size</span>).<span class="ident">unwrap</span>()
+                    };
+                    <span class="macro">assert_eq!</span>(<span class="ident">private_key</span>.<span class="ident">n</span>().<span class="ident">bits</span>(), <span class="macro-nonterminal">$</span><span class="macro-nonterminal">size</span>);
+
+                    <span class="ident">test_key_basics</span>(<span class="kw-2">&amp;</span><span class="ident">private_key</span>);
+                }
+            }
+        };
+    }
+
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_128</span>, <span class="number">2</span>, <span class="number">128</span>);
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_1024</span>, <span class="number">2</span>, <span class="number">1024</span>);
+
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_multi_3_256</span>, <span class="number">3</span>, <span class="number">256</span>);
+
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_multi_4_64</span>, <span class="number">4</span>, <span class="number">64</span>);
+
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_multi_5_64</span>, <span class="number">5</span>, <span class="number">64</span>);
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_multi_8_576</span>, <span class="number">8</span>, <span class="number">576</span>);
+    <span class="macro">key_generation!</span>(<span class="ident">key_generation_multi_16_1024</span>, <span class="number">16</span>, <span class="number">1024</span>);
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_impossible_keys</span>() {
+        <span class="comment">// make sure not infinite loops are hit here.</span>
+        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+            .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+            .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">32</span> {
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">RsaPrivateKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">i</span>).<span class="ident">is_err</span>();
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">generate_multi_prime_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="number">3</span>, <span class="ident">i</span>);
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">generate_multi_prime_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="number">4</span>, <span class="ident">i</span>);
+            <span class="kw">let</span> <span class="kw">_</span> <span class="op">=</span> <span class="ident">generate_multi_prime_key</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="number">5</span>, <span class="ident">i</span>);
+        }
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_negative_decryption_value</span>() {
+        <span class="kw">let</span> <span class="ident">private_key</span> <span class="op">=</span> <span class="ident">RsaPrivateKey::from_components</span>(
+            <span class="ident">BigUint::from_bytes_le</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[
+                <span class="number">99</span>, <span class="number">192</span>, <span class="number">208</span>, <span class="number">179</span>, <span class="number">0</span>, <span class="number">220</span>, <span class="number">7</span>, <span class="number">29</span>, <span class="number">49</span>, <span class="number">151</span>, <span class="number">75</span>, <span class="number">107</span>, <span class="number">75</span>, <span class="number">73</span>, <span class="number">200</span>, <span class="number">180</span>,
+            ]),
+            <span class="ident">BigUint::from_bytes_le</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="number">1</span>, <span class="number">0</span>, <span class="number">1</span>]),
+            <span class="ident">BigUint::from_bytes_le</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[
+                <span class="number">81</span>, <span class="number">163</span>, <span class="number">254</span>, <span class="number">144</span>, <span class="number">171</span>, <span class="number">159</span>, <span class="number">144</span>, <span class="number">42</span>, <span class="number">244</span>, <span class="number">133</span>, <span class="number">51</span>, <span class="number">249</span>, <span class="number">28</span>, <span class="number">12</span>, <span class="number">63</span>, <span class="number">65</span>,
+            ]),
+            <span class="macro">vec!</span>[
+                <span class="ident">BigUint::from_bytes_le</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="number">105</span>, <span class="number">101</span>, <span class="number">60</span>, <span class="number">173</span>, <span class="number">19</span>, <span class="number">153</span>, <span class="number">3</span>, <span class="number">192</span>]),
+                <span class="ident">BigUint::from_bytes_le</span>(<span class="kw-2">&amp;</span><span class="macro">vec!</span>[<span class="number">235</span>, <span class="number">65</span>, <span class="number">160</span>, <span class="number">134</span>, <span class="number">32</span>, <span class="number">136</span>, <span class="number">6</span>, <span class="number">241</span>]),
+            ],
+        );
+
+        <span class="kw">for</span> <span class="kw">_</span> <span class="kw">in</span> <span class="number">0</span>..<span class="number">1000</span> {
+            <span class="ident">test_key_basics</span>(<span class="kw-2">&amp;</span><span class="ident">private_key</span>);
+        }
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">feature</span> <span class="op">=</span> <span class="string">&quot;serde1&quot;</span>)]</span>
+    <span class="kw">fn</span> <span class="ident">test_serde</span>() {
+        <span class="kw">use</span> <span class="ident">rand::SeedableRng</span>;
+        <span class="kw">use</span> <span class="ident">rand_xorshift::XorShiftRng</span>;
+        <span class="kw">use</span> <span class="ident">serde_test</span>::{<span class="ident">assert_tokens</span>, <span class="ident">Token</span>};
+
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">XorShiftRng::from_seed</span>([<span class="number">1</span>; <span class="number">16</span>]);
+        <span class="kw">let</span> <span class="ident">priv_key</span> <span class="op">=</span> <span class="ident">RsaPrivateKey::new</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="number">64</span>).<span class="ident">expect</span>(<span class="string">&quot;failed to generate key&quot;</span>);
+
+        <span class="kw">let</span> <span class="ident">priv_tokens</span> <span class="op">=</span> [
+            <span class="ident">Token::Struct</span> {
+                <span class="ident">name</span>: <span class="string">&quot;RsaPrivateKey&quot;</span>,
+                <span class="ident">len</span>: <span class="number">3</span>,
+            },
+            <span class="ident">Token::Str</span>(<span class="string">&quot;pubkey_components&quot;</span>),
+            <span class="ident">Token::Struct</span> {
+                <span class="ident">name</span>: <span class="string">&quot;RsaPublicKey&quot;</span>,
+                <span class="ident">len</span>: <span class="number">2</span>,
+            },
+            <span class="ident">Token::Str</span>(<span class="string">&quot;n&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">2</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">1296829443</span>),
+            <span class="ident">Token::U32</span>(<span class="number">2444363981</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::Str</span>(<span class="string">&quot;e&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">1</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">65537</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::StructEnd</span>,
+            <span class="ident">Token::Str</span>(<span class="string">&quot;d&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">2</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">298985985</span>),
+            <span class="ident">Token::U32</span>(<span class="number">2349628418</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::Str</span>(<span class="string">&quot;primes&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">2</span>) },
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">1</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">3238068481</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">1</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">3242199299</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::StructEnd</span>,
+        ];
+        <span class="ident">assert_tokens</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>, <span class="kw-2">&amp;</span><span class="ident">priv_tokens</span>);
+
+        <span class="kw">let</span> <span class="ident">priv_tokens</span> <span class="op">=</span> [
+            <span class="ident">Token::Struct</span> {
+                <span class="ident">name</span>: <span class="string">&quot;RsaPublicKey&quot;</span>,
+                <span class="ident">len</span>: <span class="number">2</span>,
+            },
+            <span class="ident">Token::Str</span>(<span class="string">&quot;n&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">2</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">1296829443</span>),
+            <span class="ident">Token::U32</span>(<span class="number">2444363981</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::Str</span>(<span class="string">&quot;e&quot;</span>),
+            <span class="ident">Token::Seq</span> { <span class="ident">len</span>: <span class="prelude-val">Some</span>(<span class="number">1</span>) },
+            <span class="ident">Token::U32</span>(<span class="number">65537</span>),
+            <span class="ident">Token::SeqEnd</span>,
+            <span class="ident">Token::StructEnd</span>,
+        ];
+        <span class="ident">assert_tokens</span>(<span class="kw-2">&amp;</span><span class="ident">RsaPublicKey::from</span>(<span class="ident">priv_key</span>), <span class="kw-2">&amp;</span><span class="ident">priv_tokens</span>);
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">invalid_coeff_private_key_regression</span>() {
+        <span class="kw">let</span> <span class="ident">n</span> <span class="op">=</span> <span class="ident">base64::decode</span>(<span class="string">&quot;wC8GyQvTCZOK+iiBR5fGQCmzRCTWX9TQ3aRG5gGFk0wB6EFoLMAyEEqeG3gS8xhAm2rSWYx9kKufvNat3iWlbSRVqkcbpVAYlj2vTrpqDpJl+6u+zxFYoUEBevlJJkAhl8EuCccOA30fVpcfRvXPTtvRd3yFT9E9EwZljtgSI02w7gZwg7VIxaGeajh5Euz6ZVQZ+qNRKgXrRC7gPRqVyI6Dt0Jc+Su5KBGNn0QcPDzOahWha1ieaeMkFisZ9mdpsJoZ4tw5eicLaUomKzALHXQVt+/rcZSrCd6/7uUo11B/CYBM4UfSpwXaL88J9AE6A5++no9hmJzaF2LLp+Qwx4yY3j9TDutxSAjsraxxJOGZ3XyA9nG++Ybt3cxZ5fP7ROjxCfROBmVv5dYn0O9OBIqYeCH6QraNpZMadlLNIhyMv8Y+P3r5l/PaK4VJaEi5pPosnEPawp0W0yZDzmjk2z1LthaRx0aZVrAjlH0Rb/6goLUQ9qu1xsDtQVVpN4A89ZUmtTWORnnJr0+595eHHxssd2gpzqf4bPjNITdAEuOCCtpvyi4ls23zwuzryUYjcUOEnsXNQ+DrZpLKxdtsD/qNV/j1hfeyBoPllC3cV+6bcGOFcVGbjYqb+Kw1b0+jL69RSKQqgmS+qYqr8c48nDRxyq3QXhR8qtzUwBFSLVk=&quot;</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">e</span> <span class="op">=</span> <span class="ident">base64::decode</span>(<span class="string">&quot;AQAB&quot;</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">d</span> <span class="op">=</span> <span class="ident">base64::decode</span>(<span class="string">&quot;qQazSQ+FRN7nVK1bRsROMRB8AmsDwLVEHivlz1V3Td2Dr+oW3YUMgxedhztML1IdQJPq/ad6qErJ6yRFNySVIjDaxzBTOEoB1eHa1btOnBJWb8rVvvjaorixvJ6Tn3i4EuhsvVy9DoR1k4rGj3qSIiFjUVvLRDAbLyhpGgEfsr0Z577yJmTC5E8JLRMOKX8Tmxsk3jPVpsgd65Hu1s8S/ZmabwuHCf9SkdMeY/1bd/9i7BqqJeeDLE4B5x1xcC3z3scqDUTzqGO+vZPhjgprPDRlBamVwgenhr7KwCn8iaLamFinRVwOAag8BeBqOJj7lURiOsKQa9FIX1kdFUS1QMQxgtPycLjkbvCJjriqT7zWKsmJ7l8YLs6Wmm9/+QJRwNCEVdMTXKfCP1cJjudaiskEQThfUldtgu8gUDNYbQ/Filb2eKfiX4h1TiMxZqUZHVZyb9nShbQoXJ3vj/MGVF0QM8TxhXM8r2Lv9gDYU5t9nQlUMLhs0jVjai48jHABbFNyH3sEcOmJOIwJrCXw1dzG7AotwyaEVUHOmL04TffmwCFfnyrLjbFgnyOeoyIIBYjcY7QFRm/9nupXMTH5hZ2qrHfCJIp0KK4tNBdQqmnHapFl5l6Le1s4qBS5bEIzjitobLvAFm9abPlDGfxmY6mlrMK4+nytwF9Ct7wc1AE=&quot;</span>).<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="ident">primes</span> <span class="op">=</span> <span class="macro">vec!</span>[
+            <span class="ident">base64::decode</span>(<span class="string">&quot;9kQWEAzsbzOcdPa+s5wFfw4XDd7bB1q9foZ31b1+TNjGNxbSBCFlDF1q98vwpV6nM8bWDh/wtbNoETSQDgpEnYOQ26LWEw6YY1+q1Q2GGEFceYUf+Myk8/vTc8TN6Zw0bKZBWy10Qo8h7xk4JpzuI7NcxvjJYTkS9aErFxi3vVH0aiZC0tmfaCqr8a2rJxyVwqreRpOjwAWrotMsf2wGsF4ofx5ScoFy5GB5fJkkdOrW1LyTvZAUCX3cstPr19+TNC5zZOk7WzZatnCkN5H5WzalWtZuu0oVL205KPOa3R8V2yv5e6fm0v5fTmqSuvjmaMJLXCN4QJkmIzojO99ckQ==&quot;</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">base64::decode</span>(<span class="string">&quot;x8exdMjVA2CiI+Thx7loHtVcevoeE2sZ7btRVAvmBqo+lkHwxb7FHRnWvuj6eJSlD2f0T50EewIhhiW3R9BmktCk7hXjbSCnC1u9Oxc1IAUm/7azRqyfCMx43XhLxpD+xkBCpWkKDLxGczsRwTuaP3lKS3bSdBrNlGmdblubvVBIq4YZ2vXVlnYtza0cS+dgCK7BGTqUsrCUd/ZbIvwcwZkZtpkhj1KQfto9X/0OMurBzAqbkeq1cyRHXHkOfN/qbUIIRqr9Ii7Eswf9Vk8xp2O1Nt8nzcYS9PFD12M5eyaeFEkEYfpNMNGuTzp/31oqVjbpoCxS6vuWAZyADxhISQ==&quot;</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">base64::decode</span>(<span class="string">&quot;is7d0LY4HoXszlC2NO7gejkq7XqL4p1W6hZJPYTNx+r37t1CC2n3Vvzg6kNdpRixDhIpXVTLjN9O7UO/XuqSumYKJIKoP52eb4Tg+a3hw5Iz2Zsb5lUTNSLgkQSBPAf71LHxbL82JL4g1nBUog8ae60BwnVArThKY4EwlJguGNw09BAU4lwf6csDl/nX2vfVwiAloYpeZkHL+L8m+bueGZM5KE2jEz+7ztZCI+T+E5i69rZEYDjx0lfLKlEhQlCW3HbCPELqXgNJJkRfi6MP9kXa9lSfnZmoT081RMvqonB/FUa4HOcKyCrw9XZEtnbNCIdbitfDVEX+pSSD7596wQ==&quot;</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">base64::decode</span>(<span class="string">&quot;GPs0injugfycacaeIP5jMa/WX55VEnKLDHom4k6WlfDF4L4gIGoJdekcPEUfxOI5faKvHyFwRP1wObkPoRBDM0qZxRfBl4zEtpvjHrd5MibSyJkM8+J0BIKk/nSjbRIGeb3hV5O56PvGB3S0dKhCUnuVObiC+ne7izplsD4OTG70l1Yud33UFntyoMxrxGYLUSqhBMmZfHquJg4NOWOzKNY/K+EcHDLj1Kjvkcgv9Vf7ocsVxvpFdD9uGPceQ6kwRDdEl6mb+6FDgWuXVyqR9+904oanEIkbJ7vfkthagLbEf57dyG6nJlqh5FBZWxGIR72YGypPuAh7qnnqXXjY2Q==&quot;</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">base64::decode</span>(<span class="string">&quot;CUWC+hRWOT421kwRllgVjy6FYv6jQUcgDNHeAiYZnf5HjS9iK2ki7v8G5dL/0f+Yf+NhE/4q8w4m8go51hACrVpP1p8GJDjiT09+RsOzITsHwl+ceEKoe56ZW6iDHBLlrNw5/MtcYhKpjNU9KJ2udm5J/c9iislcjgckrZG2IB8ADgXHMEByZ5DgaMl4AKZ1Gx8/q6KftTvmOT5rNTMLi76VN5KWQcDWK/DqXiOiZHM7Nr4dX4me3XeRgABJyNR8Fqxj3N1+HrYLe/zs7LOaK0++F9Ul3tLelhrhsvLxei3oCZkF9A/foD3on3luYA+1cRcxWpSY3h2J4/22+yo4+Q==&quot;</span>).<span class="ident">unwrap</span>(),
+        ];
+
+        <span class="ident">RsaPrivateKey::from_components</span>(
+            <span class="ident">BigUint::from_bytes_be</span>(<span class="kw-2">&amp;</span><span class="ident">n</span>),
+            <span class="ident">BigUint::from_bytes_be</span>(<span class="kw-2">&amp;</span><span class="ident">e</span>),
+            <span class="ident">BigUint::from_bytes_be</span>(<span class="kw-2">&amp;</span><span class="ident">d</span>),
+            <span class="ident">primes</span>.<span class="ident">iter</span>().<span class="ident">map</span>(<span class="op">|</span><span class="ident">p</span><span class="op">|</span> <span class="ident">BigUint::from_bytes_be</span>(<span class="ident">p</span>)).<span class="ident">collect</span>(),
+        );
+    }
+
+    <span class="kw">fn</span> <span class="ident">get_private_key</span>() -&gt; <span class="ident">RsaPrivateKey</span> {
+        <span class="comment">// -----BEGIN RSA PRIVATE KEY-----</span>
+        <span class="comment">// MIIEpAIBAAKCAQEA05e4TZikwmE47RtpWoEG6tkdVTvwYEG2LT/cUKBB4iK49FKW</span>
+        <span class="comment">// icG4LF5xVU9d1p+i9LYVjPDb61eBGg/DJ+HyjnT+dNO8Fmweq9wbi1e5NMqL5bAL</span>
+        <span class="comment">// TymXW8yZrK9BW1m7KKZ4K7QaLDwpdrPBjbre9i8AxrsiZkAJUJbAzGDSL+fvmH11</span>
+        <span class="comment">// xqgbENlr8pICivEQ3HzBu8Q9Iq2rN5oM1dgHjMeA/1zWIJ3qNMkiz3hPdxfkKNdb</span>
+        <span class="comment">// WuyP8w5fAUFRB2bi4KuNRzyE6HELK5gifD2wlTN600UvGeK5v7zN2BSKv2d2+lUn</span>
+        <span class="comment">// debnWVbkUimuWpxGlJurHmIvDkj1ZSSoTtNIOwIDAQABAoIBAQDE5wxokWLJTGYI</span>
+        <span class="comment">// KBkbUrTYOSEV30hqmtvoMeRY1zlYMg3Bt1VFbpNwHpcC12+wuS+Q4B0f4kgVMoH+</span>
+        <span class="comment">// eaqXY6kvrmnY1+zRRN4p+hNb0U+Vc+NJ5FAx47dpgvWDADgmxVLomjl8Gga9IWNI</span>
+        <span class="comment">// hjDZLowrtkPXq+9wDaldaFyUFImkb1S1MW9itdLDp/G70TTLNzU6RGg/3J2V02RY</span>
+        <span class="comment">// 3iL2xEBX/nSgpDbEMI9z9NpC81xHrBanE41IOvyR5B3DoRJzguDA9RGbAiG0/GOd</span>
+        <span class="comment">// a5w4F3pt6bUm69iMONeYLAf5ig79h31Qiq4nW5RpFcAuLhEG0XXXTsZ3f16A0SwF</span>
+        <span class="comment">// PZx74eNBAoGBAPgnu/OkGHfHzFmuv0LtSynDLe/LjtloY9WwkKBaiTDdYkohydz5</span>
+        <span class="comment">// g4Vo/foN9luEYqXyrJE9bFb5dVMr2OePsHvUBcqZpIS89Z8Bm73cs5M/K85wYwC0</span>
+        <span class="comment">// 97EQEgxd+QGBWQZ8NdowYaVshjWlK1QnOzEnG0MR8Hld9gIeY1XhpC5hAoGBANpI</span>
+        <span class="comment">// F84Aid028q3mo/9BDHPsNL8bT2vaOEMb/t4RzvH39u+nDl+AY6Ox9uFylv+xX+76</span>
+        <span class="comment">// CRKgMluNH9ZaVZ5xe1uWHsNFBy4OxSA9A0QdKa9NZAVKBFB0EM8dp457YRnZCexm</span>
+        <span class="comment">// 5q1iW/mVsnmks8W+fYlc18W5xMSX/ecwkW/NtOQbAoGAHabpz4AhKFbodSLrWbzv</span>
+        <span class="comment">// CUt4NroVFKdjnoodjfujfwJFF2SYMV5jN9LG3lVCxca43ulzc1tqka33Nfv8TBcg</span>
+        <span class="comment">// WHuKQZ5ASVgm5VwU1wgDMSoQOve07MWy/yZTccTc1zA0ihDXgn3bfR/NnaVh2wlh</span>
+        <span class="comment">// CkuI92eyW1494hztc7qlmqECgYEA1zenyOQ9ChDIW/ABGIahaZamNxsNRrDFMl3j</span>
+        <span class="comment">// AD+cxHSRU59qC32CQH8ShRy/huHzTaPX2DZ9EEln76fnrS4Ey7uLH0rrFl1XvT6K</span>
+        <span class="comment">// /timJgLvMEvXTx/xBtUdRN2fUqXtI9odbSyCtOYFL+zVl44HJq2UzY4pVRDrNcxs</span>
+        <span class="comment">// SUkQJqsCgYBSaNfPBzR5rrstLtTdZrjImRW1LRQeDEky9WsMDtCTYUGJTsTSfVO8</span>
+        <span class="comment">// hkU82MpbRVBFIYx+GWIJwcZRcC7OCQoV48vMJllxMAAjqG/p00rVJ+nvA7et/nNu</span>
+        <span class="comment">// BoB0er/UmDm4Ly/97EO9A0PKMOE5YbMq9s3t3RlWcsdrU7dvw+p2+A==</span>
+        <span class="comment">// -----END RSA PRIVATE KEY-----</span>
+
+        <span class="ident">RsaPrivateKey::from_components</span>(
+            <span class="ident">BigUint::parse_bytes</span>(<span class="string">b&quot;00d397b84d98a4c26138ed1b695a8106ead91d553bf06041b62d3fdc50a041e222b8f4529689c1b82c5e71554f5dd69fa2f4b6158cf0dbeb57811a0fc327e1f28e74fe74d3bc166c1eabdc1b8b57b934ca8be5b00b4f29975bcc99acaf415b59bb28a6782bb41a2c3c2976b3c18dbadef62f00c6bb226640095096c0cc60d22fe7ef987d75c6a81b10d96bf292028af110dc7cc1bbc43d22adab379a0cd5d8078cc780ff5cd6209dea34c922cf784f7717e428d75b5aec8ff30e5f0141510766e2e0ab8d473c84e8710b2b98227c3db095337ad3452f19e2b9bfbccdd8148abf6776fa552775e6e75956e45229ae5a9c46949bab1e622f0e48f56524a84ed3483b&quot;</span>, <span class="number">16</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">BigUint::from_u64</span>(<span class="number">65537</span>).<span class="ident">unwrap</span>(),
+            <span class="ident">BigUint::parse_bytes</span>(<span class="string">b&quot;00c4e70c689162c94c660828191b52b4d8392115df486a9adbe831e458d73958320dc1b755456e93701e9702d76fb0b92f90e01d1fe248153281fe79aa9763a92fae69d8d7ecd144de29fa135bd14f9573e349e45031e3b76982f583003826c552e89a397c1a06bd2163488630d92e8c2bb643d7abef700da95d685c941489a46f54b5316f62b5d2c3a7f1bbd134cb37353a44683fdc9d95d36458de22f6c44057fe74a0a436c4308f73f4da42f35c47ac16a7138d483afc91e41dc3a1127382e0c0f5119b0221b4fc639d6b9c38177a6de9b526ebd88c38d7982c07f98a0efd877d508aae275b946915c02e2e1106d175d74ec6777f5e80d12c053d9c7be1e341&quot;</span>, <span class="number">16</span>).<span class="ident">unwrap</span>(),
+            <span class="macro">vec!</span>[
+                <span class="ident">BigUint::parse_bytes</span>(<span class="string">b&quot;00f827bbf3a41877c7cc59aebf42ed4b29c32defcb8ed96863d5b090a05a8930dd624a21c9dcf9838568fdfa0df65b8462a5f2ac913d6c56f975532bd8e78fb07bd405ca99a484bcf59f019bbddcb3933f2bce706300b4f7b110120c5df9018159067c35da3061a56c8635a52b54273b31271b4311f0795df6021e6355e1a42e61&quot;</span>,<span class="number">16</span>).<span class="ident">unwrap</span>(),
+                <span class="ident">BigUint::parse_bytes</span>(<span class="string">b&quot;00da4817ce0089dd36f2ade6a3ff410c73ec34bf1b4f6bda38431bfede11cef1f7f6efa70e5f8063a3b1f6e17296ffb15feefa0912a0325b8d1fd65a559e717b5b961ec345072e0ec5203d03441d29af4d64054a04507410cf1da78e7b6119d909ec66e6ad625bf995b279a4b3c5be7d895cd7c5b9c4c497fde730916fcdb4e41b&quot;</span>, <span class="number">16</span>).<span class="ident">unwrap</span>()
+            ],
+        )
+    }
+
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_encrypt_decrypt_oaep</span>() {
+        <span class="kw">let</span> <span class="ident">priv_key</span> <span class="op">=</span> <span class="ident">get_private_key</span>();
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha224</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha256</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha384</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha512</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha3_256</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha3_384</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_encrypt_decrypt_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha3_512</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha1</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha224</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha256</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha384</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha512</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha3_256</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha3_384</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+        <span class="ident">do_test_oaep_with_different_hashes</span>::<span class="op">&lt;</span><span class="ident">Sha3_512</span>, <span class="ident">Sha1</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">priv_key</span>);
+    }
+
+    <span class="kw">fn</span> <span class="ident">do_test_encrypt_decrypt_oaep</span><span class="op">&lt;</span><span class="ident">D</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Digest</span> <span class="op">+</span> <span class="ident">DynDigest</span><span class="op">&gt;</span>(<span class="ident">prk</span>: <span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span>) {
+        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+            .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+            .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+
+        <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">prk</span>.<span class="ident">size</span>();
+
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span>..<span class="number">8</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">i</span> <span class="op">*</span> <span class="number">8</span>).<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">rng</span>.<span class="ident">gen</span>()).<span class="ident">collect</span>();
+            <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">k</span> <span class="op">-</span> <span class="number">11</span> {
+                <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">0</span>..<span class="ident">k</span> <span class="op">-</span> <span class="number">11</span>].<span class="ident">to_vec</span>();
+            }
+            <span class="kw">let</span> <span class="ident">has_label</span>: <span class="ident">bool</span> <span class="op">=</span> <span class="ident">rng</span>.<span class="ident">gen</span>();
+            <span class="kw">let</span> <span class="ident">label</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">has_label</span> {
+                <span class="prelude-val">Some</span>(
+                    <span class="ident">rng</span>.<span class="ident">clone</span>()
+                        .<span class="ident">sample_iter</span>(<span class="kw-2">&amp;</span><span class="ident">Alphanumeric</span>)
+                        .<span class="ident">take</span>(<span class="number">30</span>)
+                        .<span class="ident">map</span>(<span class="ident">char::from</span>)
+                        .<span class="ident">collect</span>(),
+                )
+            } <span class="kw">else</span> {
+                <span class="prelude-val">None</span>
+            };
+
+            <span class="kw">let</span> <span class="ident">pub_key</span>: <span class="ident">RsaPublicKey</span> <span class="op">=</span> <span class="ident">prk</span>.<span class="ident">into</span>();
+
+            <span class="kw">let</span> <span class="ident">ciphertext</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">label</span>) <span class="op">=</span> <span class="ident">label</span> {
+                <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep_with_label</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">label</span>);
+                <span class="ident">pub_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">input</span>).<span class="ident">unwrap</span>()
+            } <span class="kw">else</span> {
+                <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep</span>::<span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>();
+                <span class="ident">pub_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">input</span>).<span class="ident">unwrap</span>()
+            };
+
+            <span class="macro">assert_ne!</span>(<span class="ident">input</span>, <span class="ident">ciphertext</span>);
+            <span class="kw">let</span> <span class="ident">blind</span>: <span class="ident">bool</span> <span class="op">=</span> <span class="ident">rng</span>.<span class="ident">gen</span>();
+
+            <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">label</span>) <span class="op">=</span> <span class="ident">label</span> {
+                <span class="ident">PaddingScheme::new_oaep_with_label</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">label</span>)
+            } <span class="kw">else</span> {
+                <span class="ident">PaddingScheme::new_oaep</span>::<span class="op">&lt;</span><span class="ident">D</span><span class="op">&gt;</span>()
+            };
+
+            <span class="kw">let</span> <span class="ident">plaintext</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">blind</span> {
+                <span class="ident">prk</span>.<span class="ident">decrypt</span>(<span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>).<span class="ident">unwrap</span>()
+            } <span class="kw">else</span> {
+                <span class="ident">prk</span>.<span class="ident">decrypt_blinded</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>).<span class="ident">unwrap</span>()
+            };
+
+            <span class="macro">assert_eq!</span>(<span class="ident">input</span>, <span class="ident">plaintext</span>);
+        }
+    }
+
+    <span class="kw">fn</span> <span class="ident">do_test_oaep_with_different_hashes</span><span class="op">&lt;</span>
+        <span class="ident">D</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Digest</span> <span class="op">+</span> <span class="ident">DynDigest</span>,
+        <span class="ident">U</span>: <span class="lifetime">&#39;static</span> <span class="op">+</span> <span class="ident">Digest</span> <span class="op">+</span> <span class="ident">DynDigest</span>,
+    <span class="op">&gt;</span>(
+        <span class="ident">prk</span>: <span class="kw-2">&amp;</span><span class="ident">RsaPrivateKey</span>,
+    ) {
+        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+            .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+            .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+
+        <span class="kw">let</span> <span class="ident">k</span> <span class="op">=</span> <span class="ident">prk</span>.<span class="ident">size</span>();
+
+        <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">1</span>..<span class="number">8</span> {
+            <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">input</span>: <span class="ident">Vec</span><span class="op">&lt;</span><span class="ident">u8</span><span class="op">&gt;</span> <span class="op">=</span> (<span class="number">0</span>..<span class="ident">i</span> <span class="op">*</span> <span class="number">8</span>).<span class="ident">map</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="ident">rng</span>.<span class="ident">gen</span>()).<span class="ident">collect</span>();
+            <span class="kw">if</span> <span class="ident">input</span>.<span class="ident">len</span>() <span class="op">&gt;</span> <span class="ident">k</span> <span class="op">-</span> <span class="number">11</span> {
+                <span class="ident">input</span> <span class="op">=</span> <span class="ident">input</span>[<span class="number">0</span>..<span class="ident">k</span> <span class="op">-</span> <span class="number">11</span>].<span class="ident">to_vec</span>();
+            }
+            <span class="kw">let</span> <span class="ident">has_label</span>: <span class="ident">bool</span> <span class="op">=</span> <span class="ident">rng</span>.<span class="ident">gen</span>();
+            <span class="kw">let</span> <span class="ident">label</span>: <span class="prelude-ty">Option</span><span class="op">&lt;</span><span class="ident">String</span><span class="op">&gt;</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">has_label</span> {
+                <span class="prelude-val">Some</span>(
+                    <span class="ident">rng</span>.<span class="ident">clone</span>()
+                        .<span class="ident">sample_iter</span>(<span class="kw-2">&amp;</span><span class="ident">Alphanumeric</span>)
+                        .<span class="ident">take</span>(<span class="number">30</span>)
+                        .<span class="ident">map</span>(<span class="ident">char::from</span>)
+                        .<span class="ident">collect</span>(),
+                )
+            } <span class="kw">else</span> {
+                <span class="prelude-val">None</span>
+            };
+
+            <span class="kw">let</span> <span class="ident">pub_key</span>: <span class="ident">RsaPublicKey</span> <span class="op">=</span> <span class="ident">prk</span>.<span class="ident">into</span>();
+
+            <span class="kw">let</span> <span class="ident">ciphertext</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">label</span>) <span class="op">=</span> <span class="ident">label</span> {
+                <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep_with_mgf_hash_with_label</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">label</span>);
+                <span class="ident">pub_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">input</span>).<span class="ident">unwrap</span>()
+            } <span class="kw">else</span> {
+                <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="ident">PaddingScheme::new_oaep_with_mgf_hash</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U</span><span class="op">&gt;</span>();
+                <span class="ident">pub_key</span>.<span class="ident">encrypt</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">input</span>).<span class="ident">unwrap</span>()
+            };
+
+            <span class="macro">assert_ne!</span>(<span class="ident">input</span>, <span class="ident">ciphertext</span>);
+            <span class="kw">let</span> <span class="ident">blind</span>: <span class="ident">bool</span> <span class="op">=</span> <span class="ident">rng</span>.<span class="ident">gen</span>();
+
+            <span class="kw">let</span> <span class="ident">padding</span> <span class="op">=</span> <span class="kw">if</span> <span class="kw">let</span> <span class="prelude-val">Some</span>(<span class="kw-2">ref</span> <span class="ident">label</span>) <span class="op">=</span> <span class="ident">label</span> {
+                <span class="ident">PaddingScheme::new_oaep_with_mgf_hash_with_label</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="ident">label</span>)
+            } <span class="kw">else</span> {
+                <span class="ident">PaddingScheme::new_oaep_with_mgf_hash</span>::<span class="op">&lt;</span><span class="ident">D</span>, <span class="ident">U</span><span class="op">&gt;</span>()
+            };
+
+            <span class="kw">let</span> <span class="ident">plaintext</span> <span class="op">=</span> <span class="kw">if</span> <span class="ident">blind</span> {
+                <span class="ident">prk</span>.<span class="ident">decrypt</span>(<span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>).<span class="ident">unwrap</span>()
+            } <span class="kw">else</span> {
+                <span class="ident">prk</span>.<span class="ident">decrypt_blinded</span>(<span class="kw-2">&amp;mut</span> <span class="ident">rng</span>, <span class="ident">padding</span>, <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>).<span class="ident">unwrap</span>()
+            };
+
+            <span class="macro">assert_eq!</span>(<span class="ident">input</span>, <span class="ident">plaintext</span>);
+        }
+    }
+    <span class="attribute">#[<span class="ident">test</span>]</span>
+    <span class="kw">fn</span> <span class="ident">test_decrypt_oaep_invalid_hash</span>() {
+        <span class="kw">let</span> <span class="ident">seed</span> <span class="op">=</span> <span class="ident">SystemTime::now</span>()
+            .<span class="ident">duration_since</span>(<span class="ident">SystemTime::UNIX_EPOCH</span>)
+            .<span class="ident">unwrap</span>();
+        <span class="kw">let</span> <span class="kw-2">mut</span> <span class="ident">rng</span> <span class="op">=</span> <span class="ident">StdRng::seed_from_u64</span>(<span class="ident">seed</span>.<span class="ident">as_secs</span>());
+        <span class="kw">let</span> <span class="ident">priv_key</span> <span class="op">=</span> <span class="ident">get_private_key</span>();
+        <span class="kw">let</span> <span class="ident">pub_key</span>: <span class="ident">RsaPublicKey</span> <span class="op">=</span> (<span class="kw-2">&amp;</span><span class="ident">priv_key</span>).<span class="ident">into</span>();
+        <span class="kw">let</span> <span class="ident">ciphertext</span> <span class="op">=</span> <span class="ident">pub_key</span>
+            .<span class="ident">encrypt</span>(
+                <span class="kw-2">&amp;mut</span> <span class="ident">rng</span>,
+                <span class="ident">PaddingScheme::new_oaep</span>::<span class="op">&lt;</span><span class="ident">Sha1</span><span class="op">&gt;</span>(),
+                <span class="string">&quot;a_plain_text&quot;</span>.<span class="ident">as_bytes</span>(),
+            )
+            .<span class="ident">unwrap</span>();
+        <span class="macro">assert!</span>(
+            <span class="ident">priv_key</span>
+                .<span class="ident">decrypt_blinded</span>(
+                    <span class="kw-2">&amp;mut</span> <span class="ident">rng</span>,
+                    <span class="ident">PaddingScheme::new_oaep_with_label</span>::<span class="op">&lt;</span><span class="ident">Sha1</span>, <span class="kw">_</span><span class="op">&gt;</span>(<span class="string">&quot;label&quot;</span>),
+                    <span class="kw-2">&amp;</span><span class="ident">ciphertext</span>,
+                )
+                .<span class="ident">is_err</span>(),
+            <span class="string">&quot;decrypt should have failed on hash verification&quot;</span>
+        );
+    }
+}
+</code></pre></div>
+</section><section id="search" class="content hidden"></section></div></main><div id="rustdoc-vars" data-root-path="../../" data-current-crate="rsa" data-themes="ayu,dark,light" data-resource-suffix="" data-rustdoc-version="1.61.0 (fe5b13d68 2022-05-18)" ></div>
+</body></html>

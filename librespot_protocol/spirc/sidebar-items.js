@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["CapabilityType",""],["MessageType",""],["PlayStatus",""]],"fn":[["file_descriptor_proto",""]],"struct":[["Ad",""],["Capability",""],["DeviceState",""],["Frame","Generated files are compatible only with the same version of protobuf runtime."],["Goodbye",""],["Metadata",""],["State",""],["TrackRef",""]]});

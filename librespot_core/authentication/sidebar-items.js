@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["AuthenticationError",""]],"struct":[["Credentials","The credentials are used to log into the Spotify API."]]});
