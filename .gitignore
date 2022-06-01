@@ -2,8 +2,9 @@
 /Cargo.lock
 /.env*
 
-!/test.ogg
-
 # Leftover files from testing
 *.ogg
 *.lrc
+
+!/test.ogg
+!/test.lrc

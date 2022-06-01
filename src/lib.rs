@@ -2,6 +2,8 @@
 //! <strong>Warning:</strong> There is a <i>very slight</i> chance that you will be banned from Spotify. Use at your own risk.
 //! </p>
 
+pub mod lyrics;
+
 use std::{
     collections::HashMap,
     io::{Cursor, Read, Seek, SeekFrom},
@@ -21,6 +23,7 @@ use librespot::{
     discovery::Credentials,
     metadata::audio::{AudioFileFormat, AudioItem},
 };
+use lyrics::Lyrics;
 use once_cell::sync::Lazy;
 
 #[derive(Clone)]
@@ -59,7 +62,7 @@ impl Beater {
     ///
     /// # Examples
     ///
-    /// ```no_run
+    /// ```
     /// use beater::Beater;
     ///
     /// let beater = Beater::new_with_session(session).await?;
@@ -103,13 +106,13 @@ impl Beater {
             let encrypted = Cursor::new(raw_res);
 
             let audio_key = self.session().audio_key().request(track, file_id).await?;
-            let encrypted_size = encrypted.get_ref().len() as u32;
+            let encrypted_size = encrypted.get_ref().len();
 
             let mut decrypted_ = AudioDecrypt::new(Some(audio_key), encrypted);
             // Skip the encryption header
             decrypted_.seek(SeekFrom::Start(ENCRYPTED_HEADER_SIZE as u64))?;
 
-            let mut decrypted = Vec::with_capacity(encrypted_size as usize);
+            let mut decrypted = Vec::with_capacity(encrypted_size);
 
             decrypted_.read_to_end(&mut decrypted)?;
             drop(decrypted_);
@@ -148,6 +151,10 @@ impl Beater {
 
         Err(Error::invalid_argument(""))
     }
+
+    pub async fn get_lyrics(&self, track: SpotifyId) -> Result<Lyrics> {
+        Lyrics::get(self.session(), track).await
+    }
 }
 
 #[cfg(test)]
@@ -185,5 +192,43 @@ mod tests {
 
         // not using `assert_eq` because we don't want to print the files if they're different
         assert!(audio_file == working);
+    }
+
+    #[tokio::test]
+    async fn lyrics() {
+        use librespot_core::error::ErrorKind;
+
+        let beater = create().await;
+
+        // a song without lyrics
+        {
+            // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
+            let track = beater
+                .parse_uri("spotify:track:0iQJLCJyv6TTPUP4u4y8DJ")
+                .unwrap();
+
+            assert!(matches!(
+                beater.get_lyrics(track).await,
+                Err(Error {
+                    kind: ErrorKind::NotFound,
+                    ..
+                })
+            ));
+        }
+
+        // a song with lyrics
+        {
+            // Thirsty - AJR
+            let track = beater
+                .parse_uri("spotify:track:0iQJLCJyv6TTPUP4u4y8DJ")
+                .unwrap();
+
+            let working = std::fs::read_to_string("test.lrc").unwrap();
+
+            assert_eq!(
+                beater.get_lyrics(track).await.unwrap().into_lrc_file(),
+                working
+            );
+        }
     }
 }

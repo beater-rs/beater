@@ -8,29 +8,14 @@ type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 mod auth;
 use auth::Credentials;
 
-mod lyrics;
-use lyrics::Lyrics;
+// to trigger a rebuild when the Cargo.toml changes
+const _: &str = include_str!("../../Cargo.toml");
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
-        .without_time()
-        .init();
-
     let config_dir = std::env::var("BEATER_CONFIG_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|_| dirs::config_dir().unwrap().join("beater"));
-
-    match fs::create_dir_all(&config_dir) {
-        Ok(_) => {}
-        Err(err) => {
-            if err.kind() != std::io::ErrorKind::AlreadyExists {
-                tracing::error!("Failed to create config directory: {err}");
-                std::process::exit(1);
-            }
-        }
-    };
 
     let credentials_path = config_dir.join("credentials.toml");
 
@@ -54,9 +39,34 @@ async fn main() -> Result<()> {
             .required(!credentials_path.exists()),
         )
         .arg(arg!(
-            <track> "The track url you want to download"
+                <url> "The Spotify url you want to download"
         ))
+        .arg(
+            arg!(
+                --debug "Enable debug output"
+            )
+            .required(false),
+        )
         .get_matches();
+
+    tracing_subscriber::fmt()
+        .with_max_level(if args.is_present("debug") {
+            tracing::Level::DEBUG
+        } else {
+            tracing::Level::INFO
+        })
+        .without_time()
+        .init();
+
+    match fs::create_dir_all(&config_dir) {
+        Ok(_) => {}
+        Err(err) => {
+            if err.kind() != std::io::ErrorKind::AlreadyExists {
+                tracing::error!("Failed to create config directory: {err}");
+                std::process::exit(1);
+            }
+        }
+    };
 
     let Credentials { username, password } = Credentials::new(
         &args
@@ -75,8 +85,7 @@ async fn main() -> Result<()> {
         }
     };
 
-    let track_id = beater.parse_uri(args.value_of("track").unwrap()).unwrap();
-
+    let track_id = beater.parse_uri(args.value_of("url").unwrap()).unwrap();
     let track = Track::get(beater.session(), track_id).await?;
 
     let track_name = track
@@ -113,10 +122,7 @@ async fn main() -> Result<()> {
     if track.has_lyrics {
         fs::write(
             format!("{file_name}.lrc"),
-            Lyrics::get(beater.session(), track_id)
-                .await?
-                .into_lrc_file()
-                .await,
+            beater.get_lyrics(track_id).await?.into_lrc_file(),
         )?;
     }
 

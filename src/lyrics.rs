@@ -43,7 +43,7 @@ impl Lyrics {
         .map_err(|e| e.into())
     }
 
-    pub async fn into_lrc_file(self) -> String {
+    pub fn into_lrc_file(self) -> String {
         fn calculate_time(ms: u32) -> String {
             let secs = ms / 1000;
             let mins = secs / 60;
