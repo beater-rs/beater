@@ -13,10 +13,6 @@ jobs:
         name: Test
         runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                build: [stable, beta, nightly]
-
         steps:
             - name: Checkout
               uses: actions/checkout@v1
@@ -24,7 +20,7 @@ jobs:
             - name: Install Rust
               uses: actions-rs/toolchain@v1
               with:
-                  toolchain: ${{ matrix.build }}
+                  toolchain: stable
                   profile: minimal
                   override: true
 
