@@ -1,7 +1,10 @@
 use beater::Beater;
 use clap::{arg, command};
 use librespot_metadata::{audio::AudioFileFormat, Artist, Metadata, Track};
-use std::{error, fs, path::PathBuf};
+use std::{
+    error, fs,
+    path::{Path, PathBuf},
+};
 
 type Result<T> = std::result::Result<T, Box<dyn error::Error>>;
 
@@ -17,35 +20,46 @@ async fn main() -> Result<()> {
         .map(PathBuf::from)
         .unwrap_or_else(|_| dirs::config_dir().unwrap().join("beater"));
 
-    let credentials_path = config_dir.join("credentials.toml");
+    let credentials_path = &*config_dir.join("credentials.toml");
 
     let args = command!()
         .arg(
-            arg!(
-                -c --credentials <FILE> "Path to credentials file"
-            )
-            .required(false),
+            arg!( -c --credentials <FILE> "Path to credentials file" )
+                .required(false)
+                .forbid_empty_values(true)
+                .default_value(&*credentials_path.to_string_lossy()),
         )
         .arg(
-            arg!(
-                -u --username <USERNAME> "Spotify username"
-            )
-            .required(!credentials_path.exists()),
+            arg!( -u --username <USERNAME> "Spotify username" )
+                .required(!credentials_path.exists())
+                .forbid_empty_values(true)
+                .requires("password"),
         )
         .arg(
-            arg!(
-                -p --password <PASSWORD> "Spotify password"
-            )
-            .required(!credentials_path.exists()),
+            arg!( -p --password <PASSWORD> "Spotify password" )
+                .required(!credentials_path.exists())
+                .forbid_empty_values(true)
+                .requires("username"),
         )
-        .arg(arg!(
-                <url> "The Spotify url you want to download"
-        ))
         .arg(
-            arg!(
-                --debug "Enable debug output"
-            )
-            .required(false),
+            arg!( <url> "The Spotify url you want to download" ).validator(|v| {
+                if v.starts_with("spotify:")
+                    || ((v.starts_with("http://") || v.starts_with("https://"))
+                        && v.contains("open.spotify.com"))
+                {
+                    Ok(())
+                } else {
+                    Err(String::from("Invalid url/uri"))
+                }
+            }),
+        )
+        .arg(arg!( --debug "Enable debug output" ).required(false))
+        .arg(
+            arg!( --quality <QUALITY> "Quality of the output file in kbps [default: 320 if premium account, 160 otherwise]" )
+                .required(false)
+                .possible_value("320")
+                .possible_value("160")
+                .possible_value("96"),
         )
         .get_matches();
 
@@ -69,14 +83,12 @@ async fn main() -> Result<()> {
     };
 
     let Credentials { username, password } = Credentials::new(
-        &args
-            .value_of("credentials")
-            .map(PathBuf::from)
-            .unwrap_or(credentials_path),
+        args.value_of("credentials").map(Path::new).unwrap(),
         args.value_of("username").map(String::from),
         args.value_of("password").map(String::from),
     );
 
+    tracing::info!("Logging into Spotify");
     let mut beater = match Beater::new(username, password).await {
         Ok(beater) => beater,
         Err(err) => {
@@ -113,7 +125,15 @@ async fn main() -> Result<()> {
     .join(", ");
 
     let (audio_file, _file_id) = beater
-        .get_audio_file(track_id, AudioFileFormat::OGG_VORBIS_160)
+        .get_audio_file(
+            track_id,
+            args.value_of("quality").map(|q| match q {
+                "320" => AudioFileFormat::OGG_VORBIS_320,
+                "160" => AudioFileFormat::OGG_VORBIS_160,
+                "96" => AudioFileFormat::OGG_VORBIS_96,
+                _ => unreachable!(),
+            }),
+        )
         .await?;
 
     let file_name = format!("{track_name} - {artists}");

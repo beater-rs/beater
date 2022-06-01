@@ -35,10 +35,8 @@ toml = { version = "0.5", optional = true }
 tracing-subscriber = { version = "0.3", optional = true }
 
 [dev-dependencies]
-log = "0.4"
-simplelog = "0.12"
 tokio = { version = "1.18", features = ["macros", "rt-multi-thread"] }
-dotenvy = "0.15.1"
+dotenvy = "0.15"
 
 [[bin]]
 name = "beater"

@@ -71,12 +71,22 @@ impl Beater {
         Self(session)
     }
 
-    pub async fn get_audio_file(
+    pub async fn get_audio_file<T: Into<Option<AudioFileFormat>>>(
         &mut self,
         track: SpotifyId,
-        music_format: AudioFileFormat,
+        music_format: T,
     ) -> Result<(Vec<u8>, FileId)> {
         use futures_util::stream::StreamExt;
+
+        let music_format = music_format.into().unwrap_or_else(|| {
+            if self.is_premium() {
+                tracing::info!("User is premium, using 320 kbps");
+                AudioFileFormat::OGG_VORBIS_320
+            } else {
+                tracing::info!("User is not premium, using 160 kbps");
+                AudioFileFormat::OGG_VORBIS_160
+            }
+        });
 
         if let Some(file_id) = AudioItem::get_file(self.session(), track)
             .await?
@@ -84,17 +94,24 @@ impl Beater {
             .get(&music_format)
             .copied()
         {
+            tracing::debug!("Found FileId: {}", file_id);
+
             if let Some(decrypted) = CACHE.read().unwrap().get(&file_id) {
+                tracing::info!("Using cached audio file");
                 return Ok((decrypted.clone(), file_id));
             }
 
             let cdn_url = CdnUrl::new(file_id).resolve_audio(self.session()).await?;
+            let cdn_url = cdn_url.try_get_url()?;
+
+            tracing::debug!("Got CDN URL: {cdn_url}");
 
             let req = http::Request::builder()
                 .method(&http::Method::GET)
-                .uri(cdn_url.try_get_url()?)
+                .uri(cdn_url)
                 .body(hyper::Body::empty())?;
 
+            tracing::info!("Requesting encrypted audio file");
             let mut res = self.session().http_client().request(req).await?.into_body();
 
             let mut raw_res = Vec::new();
@@ -105,9 +122,11 @@ impl Beater {
 
             let encrypted = Cursor::new(raw_res);
 
+            tracing::info!("Requesting decryption key");
             let audio_key = self.session().audio_key().request(track, file_id).await?;
             let encrypted_size = encrypted.get_ref().len();
 
+            tracing::info!("Decrypting audio file");
             let mut decrypted_ = AudioDecrypt::new(Some(audio_key), encrypted);
             // Skip the encryption header
             decrypted_.seek(SeekFrom::Start(ENCRYPTED_HEADER_SIZE as u64))?;
@@ -123,11 +142,6 @@ impl Beater {
         } else {
             Err(Error::not_found(""))
         }
-    }
-
-    #[inline]
-    pub fn session(&self) -> &Session {
-        &self.0
     }
 
     pub fn parse_uri(&self, uri: impl AsRef<str>) -> Result<SpotifyId> {
@@ -154,6 +168,18 @@ impl Beater {
 
     pub async fn get_lyrics(&self, track: SpotifyId) -> Result<Lyrics> {
         Lyrics::get(self.session(), track).await
+    }
+
+    pub fn is_premium(&self) -> bool {
+        self.session()
+            .get_user_attribute("type")
+            .map(|t| t == "premium")
+            .unwrap_or(false)
+    }
+
+    #[inline]
+    pub fn session(&self) -> &Session {
+        &self.0
     }
 }
 
