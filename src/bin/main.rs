@@ -1,6 +1,5 @@
 use beater::Beater;
-use clap::Parser;
-use librespot_core::SpotifyId;
+use clap::{arg, command};
 use librespot_metadata::{audio::AudioFileFormat, Artist, Metadata, Track};
 use std::{error, fs, path::PathBuf};
 
@@ -11,17 +10,6 @@ use auth::Credentials;
 
 mod lyrics;
 use lyrics::Lyrics;
-
-#[derive(Parser, Debug)]
-#[clap(author, version, about, long_about = None)]
-struct Args {
-    #[clap(short, long)]
-    username: Option<String>,
-    #[clap(short, long)]
-    password: Option<String>,
-    #[clap(short, long)]
-    track_id: String,
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -46,10 +34,38 @@ async fn main() -> Result<()> {
 
     let credentials_path = config_dir.join("credentials.toml");
 
-    let args = Args::parse();
+    let args = command!()
+        .arg(
+            arg!(
+                -c --credentials <FILE> "Path to credentials file"
+            )
+            .required(false),
+        )
+        .arg(
+            arg!(
+                -u --username <USERNAME> "Spotify username"
+            )
+            .required(!credentials_path.exists()),
+        )
+        .arg(
+            arg!(
+                -p --password <PASSWORD> "Spotify password"
+            )
+            .required(!credentials_path.exists()),
+        )
+        .arg(arg!(
+            <track> "The track url you want to download"
+        ))
+        .get_matches();
 
-    let Credentials { username, password } =
-        Credentials::new(&credentials_path, args.username, args.password);
+    let Credentials { username, password } = Credentials::new(
+        &args
+            .value_of("credentials")
+            .map(PathBuf::from)
+            .unwrap_or(credentials_path),
+        args.value_of("username").map(String::from),
+        args.value_of("password").map(String::from),
+    );
 
     let mut beater = match Beater::new(username, password).await {
         Ok(beater) => beater,
@@ -59,8 +75,9 @@ async fn main() -> Result<()> {
         }
     };
 
-    let track_id = SpotifyId::from_uri(&format!("spotify:track:{}", args.track_id)).unwrap();
-    let track = Track::get(&beater.session, track_id).await?;
+    let track_id = beater.parse_uri(args.value_of("track").unwrap()).unwrap();
+
+    let track = Track::get(beater.session(), track_id).await?;
 
     let track_name = track
         .name
@@ -72,7 +89,7 @@ async fn main() -> Result<()> {
         track
             .artists
             .iter()
-            .map(|id| async { Artist::get(&beater.session, *id).await.unwrap() }),
+            .map(|id| async { Artist::get(beater.session(), *id).await.unwrap() }),
     )
     .await
     .into_iter()
@@ -96,7 +113,7 @@ async fn main() -> Result<()> {
     if track.has_lyrics {
         fs::write(
             format!("{file_name}.lrc"),
-            Lyrics::get(&beater.session, track_id)
+            Lyrics::get(beater.session(), track_id)
                 .await?
                 .into_lrc_file()
                 .await,

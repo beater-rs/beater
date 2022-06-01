@@ -40,7 +40,7 @@ impl Lyrics {
         serde_json::from_str(&String::from_utf8_lossy(
             &session.spclient().get_lyrics(track_id).await?,
         ))
-        .map_err(|e| Box::new(e) as _)
+        .map_err(|e| e.into())
     }
 
     pub async fn into_lrc_file(self) -> String {

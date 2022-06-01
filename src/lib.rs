@@ -5,6 +5,7 @@
 use std::{
     collections::HashMap,
     io::{Cursor, Read, Seek, SeekFrom},
+    sync::RwLock,
 };
 
 mod librespot;
@@ -20,15 +21,17 @@ use librespot::{
     discovery::Credentials,
     metadata::audio::{AudioFileFormat, AudioItem},
 };
+use once_cell::sync::Lazy;
 
-pub struct Beater {
-    pub session: Session,
-    pub cache: HashMap<FileId, Vec<u8>>,
-}
+#[derive(Clone)]
+pub struct Beater(Session);
 
 pub const ENCRYPTED_HEADER_SIZE: u8 = 0xA7;
 
 pub(crate) type Result<T> = std::result::Result<T, Error>;
+
+pub(crate) static CACHE: Lazy<RwLock<HashMap<FileId, Vec<u8>>>> =
+    Lazy::new(|| RwLock::new(HashMap::new()));
 
 impl Beater {
     /// Creates a new [`Beater`] instance.
@@ -49,10 +52,7 @@ impl Beater {
         session
             .connect(Credentials::with_password(username, password))
             .await?;
-        Ok(Self {
-            session,
-            cache: HashMap::new(),
-        })
+        Ok(Self(session))
     }
 
     /// Creates a new [`Beater`] instance.
@@ -65,10 +65,7 @@ impl Beater {
     /// let beater = Beater::new_with_session(session).await?;
     /// ```
     pub async fn new_with_session(session: Session) -> Self {
-        Self {
-            session,
-            cache: HashMap::new(),
-        }
+        Self(session)
     }
 
     pub async fn get_audio_file(
@@ -76,26 +73,26 @@ impl Beater {
         track: SpotifyId,
         music_format: AudioFileFormat,
     ) -> Result<(Vec<u8>, FileId)> {
-        use futures::stream::StreamExt;
+        use futures_util::stream::StreamExt;
 
-        if let Some(file_id) = AudioItem::get_file(&self.session, track)
+        if let Some(file_id) = AudioItem::get_file(self.session(), track)
             .await?
             .files
             .get(&music_format)
             .copied()
         {
-            if let Some(decrypted) = self.cache.get(&file_id) {
+            if let Some(decrypted) = CACHE.read().unwrap().get(&file_id) {
                 return Ok((decrypted.clone(), file_id));
             }
 
-            let cdn_url = CdnUrl::new(file_id).resolve_audio(&self.session).await?;
+            let cdn_url = CdnUrl::new(file_id).resolve_audio(self.session()).await?;
 
             let req = http::Request::builder()
                 .method(&http::Method::GET)
                 .uri(cdn_url.try_get_url()?)
                 .body(hyper::Body::empty())?;
 
-            let mut res = self.session.http_client().request(req).await?.into_body();
+            let mut res = self.session().http_client().request(req).await?.into_body();
 
             let mut raw_res = Vec::new();
 
@@ -105,7 +102,7 @@ impl Beater {
 
             let encrypted = Cursor::new(raw_res);
 
-            let audio_key = self.session.audio_key().request(track, file_id).await?;
+            let audio_key = self.session().audio_key().request(track, file_id).await?;
             let encrypted_size = encrypted.get_ref().len() as u32;
 
             let mut decrypted_ = AudioDecrypt::new(Some(audio_key), encrypted);
@@ -117,12 +114,39 @@ impl Beater {
             decrypted_.read_to_end(&mut decrypted)?;
             drop(decrypted_);
 
-            self.cache.insert(file_id, decrypted.clone());
+            CACHE.write().unwrap().insert(file_id, decrypted.clone());
 
             Ok((decrypted, file_id))
         } else {
             Err(Error::not_found(""))
         }
+    }
+
+    #[inline]
+    pub fn session(&self) -> &Session {
+        &self.0
+    }
+
+    pub fn parse_uri(&self, uri: impl AsRef<str>) -> Result<SpotifyId> {
+        use url::Url;
+
+        let uri = uri.as_ref();
+        if uri.starts_with("spotify:") {
+            return SpotifyId::from_uri(uri);
+        } else {
+            let url = Url::parse(uri)?;
+            if url.host_str() == Some("open.spotify.com") {
+                let mut path = url
+                    .path_segments()
+                    .ok_or_else(|| Error::invalid_argument(""))?;
+
+                if let (Some(type_), Some(id)) = (path.next(), path.next()) {
+                    return SpotifyId::from_uri(&format!("spotify:{}:{}", type_, id));
+                }
+            }
+        }
+
+        Err(Error::invalid_argument(""))
     }
 }
 
@@ -148,7 +172,9 @@ mod tests {
         let mut beater = create().await;
 
         // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
-        let track = SpotifyId::from_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh").unwrap();
+        let track = beater
+            .parse_uri("spotify:track:2QTDuJIGKUjR7E2Q6KupIh")
+            .unwrap();
 
         let (audio_file, _file_id) = beater
             .get_audio_file(track, AudioFileFormat::OGG_VORBIS_160)
@@ -157,7 +183,7 @@ mod tests {
 
         let working = fs::read("test.ogg").unwrap();
 
-        // not using `assert_eq` because we don't want to print the diff
+        // not using `assert_eq` because we don't want to print the files if they're different
         assert!(audio_file == working);
     }
 }
