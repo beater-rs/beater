@@ -99,7 +99,7 @@ async fn main() -> Result<()> {
             Lyrics::get(&beater.session, track_id)
                 .await?
                 .into_lrc_file()
-                .await?,
+                .await,
         )?;
     }
 
