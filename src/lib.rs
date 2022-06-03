@@ -72,7 +72,7 @@ impl Beater {
     }
 
     pub async fn get_audio_file<T: Into<Option<AudioFileFormat>>>(
-        &mut self,
+        &self,
         track: SpotifyId,
         music_format: T,
     ) -> Result<(Vec<u8>, FileId)> {
@@ -202,7 +202,7 @@ mod tests {
 
     #[tokio::test]
     async fn music_file() {
-        let mut beater = create().await;
+        let beater = create().await;
 
         // Test Drive - From How To Train Your Dragon Music From The Motion Picture.
         let track = beater
