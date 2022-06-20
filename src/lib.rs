@@ -23,6 +23,7 @@ use librespot::{
     discovery::Credentials,
     metadata::audio::{AudioFileFormat, AudioItem},
 };
+use librespot_core::cache::Cache;
 use lyrics::Lyrics;
 use once_cell::sync::Lazy;
 

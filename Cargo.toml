@@ -26,8 +26,9 @@ serde_json = "1.0"
 
 # cli dependencies
 tokio = { version = "1.18", features = [
-    "macros",
-    "rt-multi-thread",
+  "macros",
+  "rt-multi-thread",
+  "fs",
 ], optional = true }
 clap = { version = "3.1", features = ["cargo"], optional = true }
 dirs = { version = "4.0", optional = true }

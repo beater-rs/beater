@@ -1,6 +1,7 @@
 use beater::Beater;
 use clap::{arg, command};
-use librespot_metadata::{audio::AudioFileFormat, Artist, Metadata, Track};
+use librespot_core::{spotify_id::SpotifyItemType, SpotifyId};
+use librespot_metadata::{audio::AudioFileFormat, Album, Artist, Metadata, Playlist, Track};
 use std::{
     error, fs,
     path::{Path, PathBuf},
@@ -89,7 +90,7 @@ async fn main() -> Result<()> {
     );
 
     tracing::info!("Logging into Spotify");
-    let mut beater = match Beater::new(username, password).await {
+    let beater = match Beater::new(username, password).await {
         Ok(beater) => beater,
         Err(err) => {
             tracing::error!("Failed to create beater: {err}");
@@ -97,8 +98,46 @@ async fn main() -> Result<()> {
         }
     };
 
-    let track_id = beater.parse_uri(args.value_of("url").unwrap()).unwrap();
-    let track = Track::get(beater.session(), track_id).await?;
+    let quality = args.value_of("quality").map(|q| match q {
+        "320" => AudioFileFormat::OGG_VORBIS_320,
+        "160" => AudioFileFormat::OGG_VORBIS_160,
+        "96" => AudioFileFormat::OGG_VORBIS_96,
+        _ => unreachable!(),
+    });
+
+    let id = beater.parse_uri(args.value_of("url").unwrap())?;
+
+    match id.item_type {
+        SpotifyItemType::Track => download_track(&beater, id, quality, None).await?,
+        SpotifyItemType::Album => {
+            let album = Album::get(beater.session(), id).await?;
+
+            for track in album.tracks().iter().copied() {
+                download_track(&beater, track, quality, Some(Path::new(&album.name))).await?;
+            }
+        }
+        SpotifyItemType::Playlist => {
+            let playlist = Playlist::get(beater.session(), id).await?;
+
+            for track in playlist.tracks().iter().copied() {
+                download_track(&beater, track, quality, Some(Path::new(&playlist.name()))).await?;
+            }
+        }
+        item_type => {
+            tracing::error!("Unsupported item type: {item_type:?}");
+            std::process::exit(1);
+        }
+    }
+    Ok(())
+}
+
+async fn download_track(
+    beater: &Beater,
+    track: SpotifyId,
+    quality: Option<AudioFileFormat>,
+    prefix: Option<&Path>,
+) -> Result<()> {
+    let track = Track::get(beater.session(), track).await?;
 
     let track_name = track
         .name
@@ -124,25 +163,24 @@ async fn main() -> Result<()> {
     .collect::<Vec<String>>()
     .join(", ");
 
-    let (audio_file, _file_id) = beater
-        .get_audio_file(
-            track_id,
-            args.value_of("quality").map(|q| match q {
-                "320" => AudioFileFormat::OGG_VORBIS_320,
-                "160" => AudioFileFormat::OGG_VORBIS_160,
-                "96" => AudioFileFormat::OGG_VORBIS_96,
-                _ => unreachable!(),
-            }),
-        )
-        .await?;
+    let (audio_file, _file_id) = beater.get_audio_file(track.id, quality).await?;
 
-    let file_name = format!("{track_name} - {artists}");
-    fs::write(format!("{file_name}.ogg"), audio_file)?;
+    let file_name = if let Some(path) = prefix {
+        if !path.exists() {
+            fs::create_dir_all(path)?;
+        }
+
+        path.join(&format!("{artists} - {track_name}"))
+    } else {
+        PathBuf::from(&format!("{artists} - {track_name}"))
+    };
+
+    fs::write(file_name.with_extension("ogg"), audio_file)?;
 
     if track.has_lyrics {
         fs::write(
-            format!("{file_name}.lrc"),
-            beater.get_lyrics(track_id).await?.into_lrc_file(),
+            file_name.with_extension("lrc"),
+            beater.get_lyrics(track.id).await?.into_lrc_file(),
         )?;
     }
 
